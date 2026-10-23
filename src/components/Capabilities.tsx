@@ -9,7 +9,9 @@ interface CapabilitiesProps {
 
 export const Capabilities: React.FC<CapabilitiesProps> = ({ capabilities }) => {
   return (
-    <section className="py-24 px-6 md:px-12 bg-[#0E0E0E]/75 backdrop-blur-sm border-y border-white/[0.06]">
+    <section className="py-24 px-6 md:px-12 bg-transparent border-y border-white/[0.06] relative overflow-hidden">
+      {/* Subtle Ambient Light Aura */}
+      <div className="absolute top-1/2 right-1/3 w-[650px] h-[450px] bg-[#C9A86A]/10 rounded-full blur-[160px] pointer-events-none animate-pulse" />
       <div className="max-w-7xl mx-auto space-y-16">
         {/* Header */}
         <div className="space-y-3">

@@ -26,7 +26,10 @@ export const SelectedWork: React.FC<SelectedWorkProps> = ({
   });
 
   return (
-    <section id="projects" className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
+    <section id="projects" className="py-24 px-6 md:px-12 max-w-7xl mx-auto relative overflow-hidden bg-transparent">
+      {/* Dynamic Animated Ambient Light Auras */}
+      <div className="absolute top-1/3 left-1/4 -translate-x-1/2 w-[750px] h-[550px] bg-gradient-to-br from-[#C9A86A]/15 to-[#EAB308]/15 rounded-full blur-[160px] pointer-events-none animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 w-[600px] h-[500px] bg-[#C9A86A]/10 rounded-full blur-[140px] pointer-events-none animate-[pulse_7s_ease-in-out_infinite]" />
       {/* Header & Subtitle */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
         <div className="space-y-3">

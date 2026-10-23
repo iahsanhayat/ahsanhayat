@@ -14,9 +14,13 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = ({
   onWatchFilm,
 }) => {
   return (
-    <section id="work" className="scroll-mt-16 py-24 px-6 md:px-12 bg-[#0E0E0E]/75 backdrop-blur-sm relative overflow-hidden border-y border-white/[0.06]">
-      {/* Background cinematic aura */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#C9A86A]/[0.03] rounded-full blur-[160px] pointer-events-none" />
+    <section id="work" className="scroll-mt-16 py-24 px-6 md:px-12 relative overflow-hidden border-y border-white/[0.06] bg-transparent">
+      {/* Animated Anamorphic Lens Flare Line */}
+      <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#C9A86A]/25 to-transparent pointer-events-none blur-[0.5px]" />
+
+      {/* Dynamic Animated Ambient Light Auras */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-gradient-to-tr from-[#C9A86A]/20 via-[#EAB308]/25 to-transparent rounded-full blur-[170px] pointer-events-none animate-pulse" />
+      <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-[#C9A86A]/15 rounded-full blur-[150px] pointer-events-none animate-[pulse_6s_ease-in-out_infinite]" />
 
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Section Header */}

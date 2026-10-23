@@ -22,16 +22,16 @@ export const CinematicBackground: React.FC = () => {
     };
     window.addEventListener("resize", handleResize);
 
-    // 55 gentle cinematic warm dust particles floating across the viewport
-    const particles = Array.from({ length: 55 }, () => ({
+    // 85 gentle cinematic warm dust particles floating across the viewport
+    const particles = Array.from({ length: 85 }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      radius: Math.random() * 2.2 + 0.6,
-      speedY: -(Math.random() * 0.35 + 0.12),
-      speedX: (Math.random() - 0.5) * 0.25,
-      opacity: Math.random() * 0.45 + 0.15,
-      baseOpacity: Math.random() * 0.45 + 0.15,
-      pulseSpeed: Math.random() * 0.02 + 0.008,
+      radius: Math.random() * 2.5 + 0.8,
+      speedY: -(Math.random() * 0.4 + 0.15),
+      speedX: (Math.random() - 0.5) * 0.3,
+      opacity: Math.random() * 0.55 + 0.2,
+      baseOpacity: Math.random() * 0.55 + 0.2,
+      pulseSpeed: Math.random() * 0.025 + 0.01,
       angle: Math.random() * Math.PI * 2,
     }));
 
@@ -42,7 +42,7 @@ export const CinematicBackground: React.FC = () => {
         p.y += p.speedY;
         p.x += p.speedX;
         p.angle += p.pulseSpeed;
-        p.opacity = p.baseOpacity + Math.sin(p.angle) * 0.18;
+        p.opacity = p.baseOpacity + Math.sin(p.angle) * 0.22;
 
         // Wrap around viewport edges
         if (p.y < -10) {
@@ -54,9 +54,9 @@ export const CinematicBackground: React.FC = () => {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(201, 168, 106, ${Math.max(0.04, p.opacity)})`;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = "rgba(234, 179, 8, 0.35)";
+        ctx.fillStyle = `rgba(201, 168, 106, ${Math.max(0.08, p.opacity)})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "rgba(234, 179, 8, 0.45)";
         ctx.fill();
         ctx.shadowBlur = 0;
       });
@@ -77,20 +77,20 @@ export const CinematicBackground: React.FC = () => {
       {/* 1. Full-screen Floating Cinematic Particles Canvas */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full opacity-75"
+        className="absolute inset-0 w-full h-full opacity-90"
       />
 
       {/* 2. Top Hero Ambient Light Sweep */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-[#C9A86A]/12 to-[#EAB308]/15 rounded-full blur-[160px] animate-pulse duration-1000" />
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] bg-gradient-to-tr from-[#C9A86A]/15 to-[#EAB308]/20 rounded-full blur-[160px] animate-pulse" />
 
-      {/* 3. Middle Section (Selected Work & Featured Project) Ambient Light Sweep */}
-      <div className="absolute top-1/2 right-1/4 translate-x-1/4 w-[750px] h-[750px] bg-gradient-to-br from-[#C9A86A]/[0.08] to-[#EAB308]/10 rounded-full blur-[170px] animate-pulse duration-700" />
+      {/* 3. Middle Section (Featured Project & Selected Work) Ambient Light Sweep */}
+      <div className="absolute top-1/2 right-1/4 translate-x-1/4 w-[850px] h-[850px] bg-gradient-to-br from-[#C9A86A]/15 to-[#EAB308]/15 rounded-full blur-[170px] animate-[pulse_6s_ease-in-out_infinite]" />
 
       {/* 4. Lower Section (Capabilities, Process, About, Contact) Ambient Light Sweep */}
-      <div className="absolute bottom-1/4 left-1/3 -translate-x-1/3 w-[800px] h-[800px] bg-gradient-to-t from-[#C9A86A]/[0.07] to-transparent rounded-full blur-[180px] animate-pulse duration-1000" />
+      <div className="absolute bottom-1/4 left-1/3 -translate-x-1/3 w-[850px] h-[850px] bg-gradient-to-t from-[#C9A86A]/12 to-[#EAB308]/10 rounded-full blur-[180px] animate-[pulse_8s_ease-in-out_infinite]" />
 
       {/* 5. Subtle Cinematic Film Grain Overlay */}
-      <div className="absolute inset-0 opacity-[0.025] cinematic-grain" />
+      <div className="absolute inset-0 opacity-[0.03] cinematic-grain" />
     </div>
   );
 };
