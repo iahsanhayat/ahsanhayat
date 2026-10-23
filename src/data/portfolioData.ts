@@ -8,6 +8,8 @@ export interface Project {
   longDescription?: string;
   thumbnail: string;
   video: string;
+  youtubeUrl?: string;
+  youtubeId?: string;
   aspectRatio: "16:9" | "9:16";
   role: string[];
   tools: string[];
@@ -190,6 +192,8 @@ export const portfolioData: PortfolioData = {
         "The Ash Phoenix represents a complete cinematic short built entirely with generative AI tools, from storyline to final cut. Reached over 160K+ views on YouTube as my first long-form AI film production.",
       thumbnail: "/images/ash-phoenix-cover.jpg",
       video: "/videos/ash-phoenix.mp4",
+      youtubeUrl: "https://youtu.be/y8lzDWuzkEo?si=GdgywJpM63hjWbLB",
+      youtubeId: "y8lzDWuzkEo",
       aspectRatio: "16:9",
       featured: true,
       role: [
@@ -216,7 +220,7 @@ export const portfolioData: PortfolioData = {
         "Commercial AI storytelling project covering character consistency, situational humor, and multi-track audio synchronization tailored to client specifications.",
       thumbnail: "/images/fruit-story-01.jpg",
       video: "/videos/fruit-story-01.mp4",
-      aspectRatio: "16:9",
+      aspectRatio: "9:16",
       isClientProject: true,
       clientName: "",
       role: [

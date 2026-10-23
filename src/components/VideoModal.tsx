@@ -19,11 +19,27 @@ interface VideoModalProps {
   onClose: () => void;
 }
 
+const extractYoutubeId = (url?: string): string | null => {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
+  );
+  if (match && match[1]) return match[1];
+  if (/^[\w-]{11}$/.test(url)) return url;
+  return null;
+};
+
 export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const youtubeId =
+    project?.youtubeId ||
+    extractYoutubeId(project?.youtubeUrl) ||
+    extractYoutubeId(project?.video);
+
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
@@ -43,13 +59,21 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   const handlePlayPause = useCallback(() => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
+      setIsBuffering(true);
       videoRef.current
         .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => {});
+        .then(() => {
+          setIsPlaying(true);
+          setIsBuffering(false);
+        })
+        .catch((err) => {
+          setIsBuffering(false);
+          console.warn("Playback error or aborted:", err);
+        });
     } else {
       videoRef.current.pause();
       setIsPlaying(false);
+      setIsBuffering(false);
     }
   }, []);
 
@@ -133,6 +157,30 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     }
   };
 
+  // Reset and auto-play attempt when project changes or modal opens
+  useEffect(() => {
+    setIsPlaying(false);
+    setProgress(0);
+    setCurrentTime("0:00");
+    setDuration("0:00");
+    if (!videoRef.current) return;
+    setIsBuffering(true);
+    videoRef.current.load();
+    const playPromise = videoRef.current.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true);
+          setIsBuffering(false);
+        })
+        .catch(() => {
+          // Browser prevented autoplay with audio; wait for user interaction
+          setIsBuffering(false);
+          setIsPlaying(false);
+        });
+    }
+  }, [project?.id]);
+
   if (!project) return null;
 
   const isVertical = project.aspectRatio === "9:16";
@@ -176,112 +224,149 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
         <div
           className={`relative bg-black flex items-center justify-center ${
             isVertical ? "aspect-[9/16] max-h-[75vh]" : "aspect-[16/9]"
-          } overflow-hidden cursor-pointer group`}
-          onClick={handlePlayPause}
+          } overflow-hidden ${!youtubeId ? "cursor-pointer group" : ""}`}
+          onClick={!youtubeId ? handlePlayPause : undefined}
         >
-          <video
-            ref={videoRef}
-            src={project.video}
-            poster={project.thumbnail}
-            preload="metadata"
-            playsInline
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onEnded={() => setIsPlaying(false)}
-            className="w-full h-full object-contain"
-          />
-
-          {/* Large Center Play Overlay (when paused) */}
-          {!isPlaying && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none transition-opacity">
-              <div className="w-20 h-20 rounded-full bg-[#C9A86A] text-[#0B0B0B] flex items-center justify-center pl-1 shadow-2xl transform scale-100 group-hover:scale-105 transition-transform duration-300">
-                <Play className="w-8 h-8 fill-current" />
-              </div>
-            </div>
-          )}
-
-          {/* Minimal Custom Control Bar */}
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/95 via-black/75 to-transparent transition-opacity duration-300 ${
-              showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
-          >
-            {/* Timeline Progress Slider */}
-            <div className="relative mb-3 flex items-center">
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="0.1"
-                value={progress}
-                onChange={handleSeek}
-                className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#C9A86A] hover:h-1.5 transition-all"
-                aria-label="Video progress timeline"
+          {youtubeId ? (
+            <div className="relative w-full h-full bg-black">
+              <iframe
+                key={youtubeId}
+                src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&color=white`}
+                title={project.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full border-0 absolute inset-0"
               />
             </div>
+          ) : (
+            <>
+              <video
+                key={project.id}
+                ref={videoRef}
+                src={project.video}
+                poster={project.thumbnail}
+                preload="auto"
+                playsInline
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onWaiting={() => setIsBuffering(true)}
+                onPlaying={() => {
+                  setIsBuffering(false);
+                  setIsPlaying(true);
+                }}
+                onCanPlay={() => setIsBuffering(false)}
+                onSeeking={() => setIsBuffering(true)}
+                onSeeked={() => setIsBuffering(false)}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  setIsBuffering(false);
+                }}
+                className="w-full h-full object-contain"
+              />
 
-            {/* Bottom Controls Row */}
-            <div className="flex items-center justify-between text-xs text-[#F5F2EA]">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={handlePlayPause}
-                  className="p-1 hover:text-[#C9A86A] transition-colors"
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? (
-                    <Pause className="w-4 h-4 fill-current" />
-                  ) : (
-                    <Play className="w-4 h-4 fill-current" />
-                  )}
-                </button>
-
-                <div className="text-[11px] font-mono tracking-wider text-[#A7A39A]">
-                  {currentTime} / {duration}
+              {/* Buffering Spinner Overlay */}
+              {isBuffering && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center pointer-events-none z-10 transition-all">
+                  <div className="w-14 h-14 rounded-full border-2 border-[#C9A86A]/20 border-t-[#C9A86A] animate-spin mb-3 shadow-[0_0_30px_rgba(201,168,106,0.35)]" />
+                  <span className="text-[11px] font-medium tracking-[0.22em] text-[#C9A86A] uppercase animate-pulse">
+                    Buffering Stream...
+                  </span>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-center space-x-3">
-                {/* Volume & Mute */}
-                <div className="flex items-center space-x-1.5">
-                  <button
-                    onClick={toggleMute}
-                    className="p-1 hover:text-[#C9A86A] transition-colors"
-                    aria-label={isMuted ? "Unmute" : "Mute"}
-                  >
-                    {isMuted || volume === 0 ? (
-                      <VolumeX className="w-4 h-4" />
-                    ) : (
-                      <Volume2 className="w-4 h-4" />
-                    )}
-                  </button>
+              {/* Large Center Play Overlay (when paused and not buffering) */}
+              {!isPlaying && !isBuffering && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none transition-opacity">
+                  <div className="w-20 h-20 rounded-full bg-[#C9A86A] text-[#0B0B0B] flex items-center justify-center pl-1 shadow-2xl transform scale-100 group-hover:scale-105 transition-transform duration-300">
+                    <Play className="w-8 h-8 fill-current" />
+                  </div>
+                </div>
+              )}
+
+              {/* Minimal Custom Control Bar */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/95 via-black/75 to-transparent transition-opacity duration-300 ${
+                  showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              >
+                {/* Timeline Progress Slider */}
+                <div className="relative mb-3 flex items-center">
                   <input
                     type="range"
                     min="0"
-                    max="1"
-                    step="0.05"
-                    value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    className="w-16 h-1 bg-white/20 rounded appearance-none cursor-pointer accent-[#C9A86A]"
-                    aria-label="Volume slider"
+                    max="100"
+                    step="0.1"
+                    value={progress}
+                    onChange={handleSeek}
+                    className="w-full h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#C9A86A] hover:h-1.5 transition-all"
+                    aria-label="Video progress timeline"
                   />
                 </div>
 
-                {/* Fullscreen */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-1 hover:text-[#C9A86A] transition-colors"
-                  aria-label="Toggle Fullscreen"
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
+                {/* Bottom Controls Row */}
+                <div className="flex items-center justify-between text-xs text-[#F5F2EA]">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={handlePlayPause}
+                      className="p-1 hover:text-[#C9A86A] transition-colors"
+                      aria-label={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4 fill-current" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-current" />
+                      )}
+                    </button>
+
+                    <div className="text-[11px] font-mono tracking-wider text-[#A7A39A]">
+                      {currentTime} / {duration}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    {/* Volume & Mute */}
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={toggleMute}
+                        className="p-1 hover:text-[#C9A86A] transition-colors"
+                        aria-label={isMuted ? "Unmute" : "Mute"}
+                      >
+                        {isMuted || volume === 0 ? (
+                          <VolumeX className="w-4 h-4" />
+                        ) : (
+                          <Volume2 className="w-4 h-4" />
+                        )}
+                      </button>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={isMuted ? 0 : volume}
+                        onChange={handleVolumeChange}
+                        className="w-16 h-1 bg-white/20 rounded appearance-none cursor-pointer accent-[#C9A86A]"
+                        aria-label="Volume slider"
+                      />
+                    </div>
+
+                    {/* Fullscreen */}
+                    <button
+                      onClick={toggleFullscreen}
+                      className="p-1 hover:text-[#C9A86A] transition-colors"
+                      aria-label="Toggle Fullscreen"
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="w-4 h-4" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
 
         {/* Project Information Panel */}
