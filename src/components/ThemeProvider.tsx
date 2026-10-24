@@ -13,21 +13,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check saved theme or fallback to dark (Ahsan's cinematic default)
+    // Check saved theme or fallback to light as requested
     try {
       const savedTheme = localStorage.getItem("ahsan_portfolio_theme") as Theme | null;
-      if (savedTheme === "light" || savedTheme === "dark") {
-        setThemeState(savedTheme);
-        applyTheme(savedTheme);
-      } else {
+      if (savedTheme === "dark") {
+        setThemeState("dark");
         applyTheme("dark");
+      } else {
+        setThemeState("light");
+        applyTheme("light");
       }
     } catch {
-      applyTheme("dark");
+      applyTheme("light");
     }
     setMounted(true);
   }, []);

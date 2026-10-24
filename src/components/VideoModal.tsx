@@ -9,9 +9,11 @@ import {
   VolumeX,
   Maximize2,
   Minimize2,
-  RotateCcw,
   Sparkles,
-  RotateCw,
+  Wifi,
+  Battery,
+  Signal,
+  ArrowLeft,
 } from "lucide-react";
 import { Project } from "@/data/portfolioData";
 
@@ -109,7 +111,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     updateBuffered();
   };
 
-  // Smooth Scrubbing: immediate UI response, clean seeking
   const handleSeekInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setProgress(val);
@@ -124,14 +125,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     const seekTime = (val / 100) * durationSec;
     videoRef.current.currentTime = seekTime;
     setIsScrubbing(false);
-  };
-
-  const skipTime = (deltaSeconds: number) => {
-    if (!videoRef.current) return;
-    const newTime = Math.max(0, Math.min(videoRef.current.currentTime + deltaSeconds, durationSec));
-    videoRef.current.currentTime = newTime;
-    setProgress(durationSec > 0 ? (newTime / durationSec) * 100 : 0);
-    setCurrentTime(formatTime(newTime));
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,13 +155,13 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     }
   };
 
-  // Keyboard accessibility
+  // Keyboard accessibility: Backspace or Escape closes modal and returns to main website where user was
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key === "Escape") {
+      if (e.key === "Backspace" || e.key === "Escape") {
+        e.preventDefault();
         onClose();
       } else if (e.key === " " || e.key === "k") {
         e.preventDefault();
@@ -177,50 +170,29 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
         toggleFullscreen();
       } else if (e.key.toLowerCase() === "m") {
         toggleMute();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        skipTime(-5);
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        skipTime(5);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setVolume((v) => {
-          const next = Math.min(1, v + 0.1);
-          if (videoRef.current) videoRef.current.volume = next;
-          return next;
-        });
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setVolume((v) => {
-          const next = Math.max(0, v - 0.1);
-          if (videoRef.current) videoRef.current.volume = next;
-          return next;
-        });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handlePlayPause, onClose, durationSec]);
+  }, [handlePlayPause, onClose]);
 
-  // Auto-hide controls when playing and inactive
+  // Controls auto-hide
   const resetControlsTimer = () => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     if (isPlaying) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
-      }, 2800);
+      }, 2500);
     }
   };
 
-  // Buffering debouncer: only show buffer indicator if waiting takes >280ms
   const handleWaiting = () => {
     if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
     bufferingTimerRef.current = setTimeout(() => {
       setIsBuffering(true);
-    }, 280);
+    }, 200);
   };
 
   const handleCanPlay = () => {
@@ -228,7 +200,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     setIsBuffering(false);
   };
 
-  // Reset and auto-play attempt when project changes or modal opens
+  // Reset and auto-play attempt when project changes
   useEffect(() => {
     setIsPlaying(false);
     setIsBuffering(false);
@@ -248,7 +220,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
           setIsBuffering(false);
         })
         .catch(() => {
-          // Autoplay with sound restricted by browser; user will click play
           setIsPlaying(false);
           setIsBuffering(false);
         });
@@ -267,311 +238,345 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-[#0B0B0B]/95 backdrop-blur-xl animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/85 backdrop-blur-2xl animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
-      <div
-        ref={containerRef}
-        onClick={(e) => e.stopPropagation()}
-        onMouseMove={resetControlsTimer}
-        className={`relative w-full ${
-          isVertical ? "max-w-md" : "max-w-5xl"
-        } bg-[#111111] border border-white/[0.08] rounded-xl shadow-[0_25px_70px_rgba(0,0,0,0.9)] overflow-hidden my-auto`}
-      >
-        {/* Top bar with project tag and close button */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06] bg-[#0E0E0E]/90 backdrop-blur-sm">
-          <div className="flex items-center space-x-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#C9A86A]" />
-            <span className="text-xs font-semibold tracking-[0.2em] text-[#C9A86A] uppercase">
-              {project.category}
-            </span>
-            {project.isClientProject && (
-              <span className="text-[10px] tracking-wider uppercase px-2 py-0.5 rounded bg-[#C9A86A]/10 text-[#C9A86A] border border-[#C9A86A]/20">
-                Client Project
-              </span>
-            )}
-          </div>
+      {/* Top Floating Utility Bar (Quick Exit & Backspace Tip) */}
+      <div className="fixed top-4 left-4 right-4 sm:top-6 sm:left-8 sm:right-8 z-50 flex items-center justify-between pointer-events-none">
+        <button
+          onClick={onClose}
+          type="button"
+          className="pointer-events-auto inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[#F5F2EA] backdrop-blur-md text-xs font-semibold tracking-wider transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>BACK</span>
+        </button>
+
+        <div className="flex items-center space-x-3 pointer-events-auto">
+          <span className="hidden sm:inline-block text-[11px] uppercase tracking-wider text-white/50 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
+            Press <kbd className="text-[#C9A86A] font-bold">⌫ Backspace</kbd> to exit
+          </span>
 
           <button
             onClick={onClose}
-            className="text-[#A7A39A] hover:text-[#F5F2EA] p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+            type="button"
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[#F5F2EA] flex items-center justify-center transition-all focus:outline-none"
             aria-label="Close viewer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
+      </div>
 
-        {/* Video Player Canvas */}
-        <div
-          className={`relative bg-black flex items-center justify-center ${
-            isVertical ? "aspect-[9/16] max-h-[75vh]" : "aspect-[16/9]"
-          } overflow-hidden cursor-pointer group select-none`}
-          onClick={handlePlayPause}
-        >
-          <video
-            key={project.id}
-            ref={videoRef}
-            src={project.video}
-            poster={project.thumbnail}
-            preload="auto"
-            playsInline
-            onTimeUpdate={handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onProgress={updateBuffered}
-            onWaiting={handleWaiting}
-            onPlaying={() => {
-              if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-              setIsBuffering(false);
-              setIsPlaying(true);
-            }}
-            onCanPlay={handleCanPlay}
-            onSeeked={() => {
-              if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-              setIsBuffering(false);
-            }}
-            onEnded={() => {
-              setIsPlaying(false);
-              setIsBuffering(false);
-              setShowControls(true);
-            }}
-            className="w-full h-full object-contain"
-          />
-
-          {/* Quick Click-Feedback Indicator */}
-          {showCenterIcon && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-ping duration-300">
-              <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md text-[#C9A86A] flex items-center justify-center border border-[#C9A86A]/30">
-                {showCenterIcon === "play" ? (
-                  <Play className="w-7 h-7 fill-current ml-0.5" />
-                ) : (
-                  <Pause className="w-7 h-7 fill-current" />
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Elegant Non-blocking Center Buffering Spinner */}
-          {isBuffering && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 bg-black/30 backdrop-blur-[1px] transition-all">
-              <div className="w-12 h-12 rounded-full border-2 border-[#C9A86A]/20 border-t-[#C9A86A] animate-spin mb-2.5 shadow-[0_0_25px_rgba(201,168,106,0.4)]" />
-              <span className="text-[10px] font-semibold tracking-[0.22em] text-[#C9A86A] uppercase">
-                Loading...
-              </span>
-            </div>
-          )}
-
-          {/* Large Center Play Overlay (when paused and not buffering) */}
-          {!isPlaying && !isBuffering && (
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none transition-opacity">
-              <div className="w-20 h-20 rounded-full bg-[#C9A86A] text-[#0B0B0B] flex items-center justify-center pl-1 shadow-[0_0_40px_rgba(201,168,106,0.4)] transform scale-100 group-hover:scale-105 transition-transform duration-300">
-                <Play className="w-8 h-8 fill-current" />
-              </div>
-            </div>
-          )}
-
-          {/* Minimal Custom Control Bar */}
+      {/* Main Content Modal Container */}
+      <div
+        ref={containerRef}
+        onClick={(e) => e.stopPropagation()}
+        onMouseMove={resetControlsTimer}
+        className={`relative my-auto flex flex-col ${
+          isVertical
+            ? "lg:flex-row items-center justify-center gap-8 lg:gap-12 max-w-5xl w-full"
+            : "items-center justify-center gap-6 max-w-5xl w-full"
+        }`}
+      >
+        {/* ====================================================================
+            THE REALISTIC IPHONE MOCKUP (Portrait vs Landscape Orientation)
+           ==================================================================== */}
+        <div className="relative shrink-0 flex items-center justify-center">
+          {/* Outer Titanium Phone Shell */}
           <div
-            onClick={(e) => e.stopPropagation()}
-            className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/95 via-black/80 to-transparent transition-opacity duration-300 ${
-              showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
-            }`}
+            className={`relative ${
+              isVertical
+                ? "w-[310px] sm:w-[350px] md:w-[370px] aspect-[9/19.5] rounded-[52px]"
+                : "w-full max-w-[820px] aspect-[19.5/9] rounded-[48px]"
+            } bg-[#181817] p-2.5 sm:p-3 shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.12)] border-[3px] border-[#363532] transition-all`}
           >
-            {/* Timeline Progress Slider with Buffered Track */}
-            <div className="relative mb-3 flex items-center group/timeline">
-              {/* Background track */}
-              <div className="absolute left-0 right-0 h-1 bg-white/15 rounded-full overflow-hidden pointer-events-none">
-                {/* Buffered chunk indicator */}
-                <div
-                  className="h-full bg-white/25 transition-all duration-300"
-                  style={{ width: `${bufferedPercent}%` }}
-                />
-              </div>
+            {/* Side Hardware Buttons (Authentic Titanium Buttons) */}
+            {isVertical ? (
+              <>
+                {/* Left Side: Action Button & Volume Buttons */}
+                <div className="absolute -left-[5px] top-24 w-[3px] h-7 bg-[#2e2d2a] rounded-l" />
+                <div className="absolute -left-[5px] top-36 w-[3px] h-12 bg-[#2e2d2a] rounded-l" />
+                <div className="absolute -left-[5px] top-52 w-[3px] h-12 bg-[#2e2d2a] rounded-l" />
+                {/* Right Side: Power / Lock Button */}
+                <div className="absolute -right-[5px] top-32 w-[3px] h-16 bg-[#2e2d2a] rounded-r" />
+              </>
+            ) : (
+              <>
+                {/* Landscape Top Side: Action & Volume Buttons */}
+                <div className="absolute top-[-5px] left-24 h-[3px] w-7 bg-[#2e2d2a] rounded-t" />
+                <div className="absolute top-[-5px] left-36 h-[3px] w-12 bg-[#2e2d2a] rounded-t" />
+                <div className="absolute top-[-5px] left-52 h-[3px] w-12 bg-[#2e2d2a] rounded-t" />
+              </>
+            )}
 
-              {/* Active played progress fill */}
-              <div
-                className="absolute left-0 h-1 bg-gradient-to-r from-[#C9A86A] to-[#E0C487] rounded-full pointer-events-none"
-                style={{ width: `${progress}%` }}
-              />
+            {/* Inner Phone Screen Canvas */}
+            <div
+              className={`relative w-full h-full bg-black ${
+                isVertical ? "rounded-[42px]" : "rounded-[38px]"
+              } overflow-hidden cursor-pointer select-none group flex items-center justify-center`}
+              onClick={handlePlayPause}
+            >
+              {/* Dynamic Island & iOS Status Bar (Portrait) */}
+              {isVertical && (
+                <div className="absolute top-0 left-0 right-0 z-30 pt-3 px-6 flex items-center justify-between text-white pointer-events-none">
+                  <span className="text-[11px] font-semibold tracking-tight">9:41</span>
 
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="0.05"
-                value={progress}
-                onPointerDown={() => setIsScrubbing(true)}
-                onTouchStart={() => setIsScrubbing(true)}
-                onChange={handleSeekInput}
-                onPointerUp={handleSeekCommit}
-                onTouchEnd={handleSeekCommit}
-                className="w-full h-2 appearance-none bg-transparent cursor-pointer relative z-10 accent-[#C9A86A] focus:outline-none"
-                aria-label="Video timeline"
-              />
-            </div>
+                  {/* Dynamic Island Pill */}
+                  <div className="w-[102px] h-[26px] rounded-full bg-black border border-white/5 flex items-center justify-between px-2.5 shadow-md">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#121315] border border-white/10" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0a1828]" />
+                  </div>
 
-            {/* Bottom Controls Row */}
-            <div className="flex items-center justify-between text-xs text-[#F5F2EA]">
-              <div className="flex items-center space-x-3">
-                {/* Play / Pause Toggle */}
-                <button
-                  onClick={handlePlayPause}
-                  className="p-1 text-[#F5F2EA] hover:text-[#C9A86A] transition-colors"
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                >
-                  {isPlaying ? (
-                    <Pause className="w-4 h-4 fill-current" />
-                  ) : (
-                    <Play className="w-4 h-4 fill-current" />
-                  )}
-                </button>
-
-                {/* Rewind 5s */}
-                <button
-                  onClick={() => skipTime(-5)}
-                  className="p-1 text-[#A7A39A] hover:text-[#F5F2EA] transition-colors"
-                  aria-label="Rewind 5 seconds"
-                  title="Rewind 5s (←)"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-
-                {/* Forward 5s */}
-                <button
-                  onClick={() => skipTime(5)}
-                  className="p-1 text-[#A7A39A] hover:text-[#F5F2EA] transition-colors"
-                  aria-label="Forward 5 seconds"
-                  title="Forward 5s (→)"
-                >
-                  <RotateCw className="w-3.5 h-3.5" />
-                </button>
-
-                <div className="text-[11px] font-mono tracking-wider text-[#A7A39A]">
-                  <span className="text-[#F5F2EA]">{currentTime}</span> / {duration}
+                  <div className="flex items-center space-x-1.5 text-white">
+                    <Signal className="w-3 h-3" />
+                    <Wifi className="w-3 h-3" />
+                    <Battery className="w-4 h-4 fill-white" />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="flex items-center space-x-3.5">
-                {/* Volume & Mute */}
-                <div className="flex items-center space-x-1.5">
-                  <button
-                    onClick={toggleMute}
-                    className="p-1 text-[#A7A39A] hover:text-[#C9A86A] transition-colors"
-                    aria-label={isMuted ? "Unmute" : "Mute"}
-                    title="Mute / Unmute (M)"
-                  >
-                    {isMuted || volume === 0 ? (
-                      <VolumeX className="w-4 h-4" />
+              {/* Dynamic Island in Landscape (Placed on the left rim as in real rotated iPhone) */}
+              {!isVertical && (
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                  <div className="h-[96px] w-[24px] rounded-full bg-black border border-white/5 flex flex-col items-center justify-between py-2 shadow-md">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#121315] border border-white/10" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0a1828]" />
+                  </div>
+                </div>
+              )}
+
+              {/* Video Element (Fills the phone display seamlessly) */}
+              <video
+                key={project.id}
+                ref={videoRef}
+                src={project.video}
+                poster={project.thumbnail}
+                preload="auto"
+                playsInline
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onProgress={updateBuffered}
+                onWaiting={handleWaiting}
+                onPlaying={() => {
+                  if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
+                  setIsBuffering(false);
+                  setIsPlaying(true);
+                }}
+                onCanPlay={handleCanPlay}
+                onSeeked={() => {
+                  if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
+                  setIsBuffering(false);
+                }}
+                onEnded={() => {
+                  setIsPlaying(false);
+                  setIsBuffering(false);
+                  setShowControls(true);
+                }}
+                className={`w-full h-full ${
+                  isVertical ? "object-cover" : "object-contain"
+                } bg-black`}
+              />
+
+              {/* Quick Click-Feedback Indicator */}
+              {showCenterIcon && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-ping duration-300">
+                  <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md text-[#C9A86A] flex items-center justify-center border border-[#C9A86A]/30">
+                    {showCenterIcon === "play" ? (
+                      <Play className="w-7 h-7 fill-current ml-0.5" />
                     ) : (
-                      <Volume2 className="w-4 h-4" />
+                      <Pause className="w-7 h-7 fill-current" />
                     )}
-                  </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Buffering Indicator */}
+              {isBuffering && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-black/40 backdrop-blur-[2px]">
+                  <div className="w-10 h-10 rounded-full border-2 border-[#C9A86A]/30 border-t-[#C9A86A] animate-spin mb-2" />
+                  <span className="text-[10px] font-bold tracking-widest text-[#C9A86A] uppercase">
+                    Loading
+                  </span>
+                </div>
+              )}
+
+              {/* Center Play Overlay when Paused */}
+              {!isPlaying && !isBuffering && (
+                <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none z-10">
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-[#C9A86A] text-black flex items-center justify-center pl-1 shadow-[0_0_35px_rgba(201,168,106,0.5)] transform scale-100 group-hover:scale-105 transition-transform duration-300">
+                    <Play className="w-7 h-7 fill-current" />
+                  </div>
+                </div>
+              )}
+
+              {/* iOS Video Controls Bar */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className={`absolute bottom-0 left-0 right-0 p-4 pt-10 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 transition-opacity duration-300 ${
+                  showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              >
+                {/* Timeline Progress Slider */}
+                <div className="relative mb-2 flex items-center group/timeline">
+                  <div className="absolute left-0 right-0 h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-white/35 transition-all duration-150"
+                      style={{ width: `${bufferedPercent}%` }}
+                    />
+                  </div>
+                  <div className="absolute left-0 right-0 h-1 rounded-full overflow-hidden pointer-events-none">
+                    <div
+                      className="h-full bg-[#C9A86A] transition-all duration-75"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
                   <input
                     type="range"
                     min="0"
-                    max="1"
-                    step="0.05"
-                    value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    className="w-16 h-1 bg-white/20 rounded appearance-none cursor-pointer accent-[#C9A86A]"
-                    aria-label="Volume slider"
+                    max="100"
+                    step="0.1"
+                    value={progress}
+                    onChange={handleSeekInput}
+                    onMouseUp={handleSeekCommit}
+                    onTouchEnd={handleSeekCommit}
+                    className="relative w-full h-4 opacity-0 cursor-pointer z-10"
+                    aria-label="Seek video progress"
                   />
                 </div>
 
-                {/* Fullscreen */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="p-1 text-[#A7A39A] hover:text-[#C9A86A] transition-colors"
-                  aria-label="Toggle Fullscreen"
-                  title="Toggle Fullscreen (F)"
-                >
-                  {isFullscreen ? (
-                    <Minimize2 className="w-4 h-4" />
-                  ) : (
-                    <Maximize2 className="w-4 h-4" />
-                  )}
-                </button>
+                {/* Control Actions Row */}
+                <div className="flex items-center justify-between text-white text-xs">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={handlePlayPause}
+                      className="text-white hover:text-[#C9A86A] transition-colors p-1"
+                      aria-label={isPlaying ? "Pause" : "Play"}
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4 fill-current" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-current" />
+                      )}
+                    </button>
+
+                    <span className="text-[11px] font-mono text-white/80">
+                      {currentTime} / {duration}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={toggleMute}
+                      className="text-white hover:text-[#C9A86A] transition-colors p-1"
+                      aria-label={isMuted ? "Unmute" : "Mute"}
+                    >
+                      {isMuted || volume === 0 ? (
+                        <VolumeX className="w-4 h-4" />
+                      ) : (
+                        <Volume2 className="w-4 h-4" />
+                      )}
+                    </button>
+
+                    <button
+                      onClick={toggleFullscreen}
+                      className="text-white hover:text-[#C9A86A] transition-colors p-1"
+                      aria-label="Toggle Fullscreen"
+                    >
+                      {isFullscreen ? (
+                        <Minimize2 className="w-4 h-4" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* iOS Home Indicator Bar */}
+                <div className="mt-3 w-28 h-1 rounded-full bg-white/40 mx-auto" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Project Information Panel */}
-        <div className="p-6 md:p-8 bg-[#111111] space-y-6">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div>
-              <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F2EA]">
-                {project.title}
-              </h3>
-              <p className="text-sm text-[#A7A39A] mt-2 leading-relaxed max-w-2xl">
-                {project.longDescription || project.description}
-              </p>
+        {/* ====================================================================
+            PROJECT INFORMATION CARD (Elegantly positioned beside/below phone)
+           ==================================================================== */}
+        <div
+          className={`flex-1 w-full bg-[#141413]/90 border border-white/10 rounded-2xl p-6 sm:p-7 backdrop-blur-xl shadow-2xl text-left space-y-5 ${
+            isVertical ? "max-w-md lg:max-w-lg" : "max-w-4xl"
+          }`}
+        >
+          {/* Header & Category */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center space-x-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#C9A86A]" />
+              <span className="text-[11px] font-bold tracking-[0.2em] text-[#C9A86A] uppercase">
+                {project.category}
+              </span>
             </div>
 
-            {project.duration && (
-              <div className="shrink-0 text-right">
-                <span className="text-[10px] tracking-[0.2em] uppercase text-[#77736C]">
-                  Duration
-                </span>
-                <p className="text-sm font-semibold tracking-wide text-[#C9A86A]">
-                  {project.duration}
-                </p>
-              </div>
+            {project.isClientProject && (
+              <span className="text-[10px] tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#C9A86A]/15 text-[#E0C487] border border-[#C9A86A]/30">
+                Client Project
+              </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/[0.08]">
-            {/* Role Breakdown */}
-            <div>
-              <h4 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#F5F2EA] mb-3">
-                My Role
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {project.role.map((r) => (
-                  <span
-                    key={r}
-                    className="text-xs px-2.5 py-1 rounded bg-white/[0.04] border border-white/[0.06] text-[#A7A39A]"
-                  >
-                    {r}
-                  </span>
-                ))}
-              </div>
-            </div>
+          <div>
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#F5F2EA]">
+              {project.title}
+            </h3>
+            <p className="text-sm text-[#A7A39A] mt-2 leading-relaxed">
+              {project.longDescription || project.description}
+            </p>
+          </div>
 
-            {/* Tools Used */}
+          {/* Duration & Roles */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10 text-xs">
             <div>
-              <h4 className="text-xs font-semibold tracking-[0.2em] uppercase text-[#F5F2EA] mb-3">
-                Tools
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {project.tools.map((t) => (
-                  <span
-                    key={t}
-                    className="text-xs px-2.5 py-1 rounded bg-[#C9A86A]/5 border border-[#C9A86A]/20 text-[#C9A86A]"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
+              <span className="text-[10px] uppercase tracking-widest text-[#77736C]">Duration</span>
+              <p className="font-semibold text-[#F5F2EA] mt-0.5">{project.duration || "N/A"}</p>
+            </div>
+            <div>
+              <span className="text-[10px] uppercase tracking-widest text-[#77736C]">Format</span>
+              <p className="font-semibold text-[#F5F2EA] mt-0.5">
+                {isVertical ? "Vertical (9:16 Mobile)" : "Widescreen (16:9)"}
+              </p>
             </div>
           </div>
 
-          {/* Action Row */}
-          <div className="pt-4 flex items-center justify-between border-t border-white/[0.06]">
+          {/* Tools Used */}
+          <div className="space-y-2 pt-2">
+            <span className="text-[10px] uppercase tracking-widest text-[#77736C]">Tools Used</span>
+            <div className="flex flex-wrap gap-1.5">
+              {project.tools.map((t) => (
+                <span
+                  key={t}
+                  className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[#C9A86A]"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom Actions */}
+          <div className="pt-4 flex items-center justify-between border-t border-white/10">
             <button
               onClick={onClose}
-              className="inline-flex items-center text-xs font-semibold tracking-[0.16em] uppercase text-[#A7A39A] hover:text-[#C9A86A] transition-colors"
+              className="text-xs font-semibold tracking-wider uppercase text-[#A7A39A] hover:text-[#C9A86A] transition-colors"
             >
-              <RotateCcw className="w-3.5 h-3.5 mr-2" />
-              BACK TO WORK
+              ← Back to site
             </button>
 
             <a
               href="#contact"
               onClick={onClose}
-              className="inline-flex items-center text-xs font-semibold tracking-[0.16em] uppercase text-[#C9A86A] hover:text-[#E0C487] transition-colors"
+              className="inline-flex items-center text-xs font-bold tracking-wider uppercase text-[#C9A86A] hover:text-[#E0C487] transition-colors"
             >
-              DISCUSS SIMILAR PROJECT
-              <Sparkles className="w-3.5 h-3.5 ml-2" />
+              <span>Discuss Project</span>
+              <Sparkles className="w-3.5 h-3.5 ml-1.5" />
             </a>
           </div>
         </div>

@@ -68,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${manrope.variable} dark scroll-smooth`}>
+    <html lang="en" suppressHydrationWarning className={`${manrope.variable} light scroll-smooth`}>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -79,7 +79,12 @@ export default function RootLayout({
                 }
                 window.scrollTo(0, 0);
                 var savedTheme = localStorage.getItem('ahsan_portfolio_theme');
-                if (savedTheme === 'light') {
+                if (savedTheme === 'dark') {
+                  document.documentElement.classList.remove('light');
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                  document.documentElement.style.colorScheme = 'dark';
+                } else {
                   document.documentElement.classList.remove('dark');
                   document.documentElement.classList.add('light');
                   document.documentElement.setAttribute('data-theme', 'light');
@@ -90,7 +95,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-[#0B0B0B] text-[#F5F2EA] min-h-screen font-sans selection:bg-[#C9A86A]/25 selection:text-[#F5F2EA] antialiased transition-colors duration-300">
+      <body className="bg-[#FAF8F5] text-[#151412] min-h-screen font-sans selection:bg-[#C9A86A]/25 selection:text-[#151412] antialiased transition-colors duration-300">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
