@@ -17,21 +17,21 @@
 
   html {
     scroll-behavior: smooth;
-    background-color: #0B0B0B;
-    color: #F5F2EA;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-family: var(--font-manrope), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   body {
-    background-color: #0B0B0B;
-    color: #F5F2EA;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     overflow-x: hidden;
     margin: 0;
     padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    selection-background-color: #C9A86A;
-    selection-color: #0B0B0B;
+    selection-background-color: var(--accent);
+    selection-color: var(--bg-primary);
   }
 
   ::selection {
@@ -202,27 +202,103 @@
   }
 }
 
-/* Base Navigation Tokens (Dark Mode Default) */
-.site-header-scrolled {
-  background-color: rgba(11, 11, 11, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-.site-nav-brand {
-  color: #F5F2EA;
-}
-.site-nav-link {
-  color: #A7A39A;
-}
-.site-mobile-drawer {
-  background-color: rgba(11, 11, 11, 0.98);
-}
-.site-mobile-toggle {
-  color: #F5F2EA;
+/* ============================================================
+   THEME DESIGN SYSTEM (DARK & LIGHT MODE)
+   ============================================================ */
+
+/* 1. DARK MODE (Obsidian & Champagne Gold) */
+:root,
+html.dark {
+  --bg-primary: #0B0B0B;
+  --bg-secondary: #111111;
+  --bg-card: #151515;
+  --bg-card-hover: #1A1A1A;
+  --text-primary: #F5F2EA;
+  --text-secondary: #A7A39A;
+  --text-muted: #77736C;
+  --accent: #C9A86A;
+  --accent-hover: #E0C487;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(201, 168, 106, 0.35);
+  color-scheme: dark;
 }
 
-/* ============================================================
-   LIGHT MODE (High-End Luxury Editorial Design System)
-   ============================================================ */
+html.dark,
+html.dark body,
+html.dark .site-main-wrapper,
+html.dark .cinematic-bg-container {
+  background-color: #0B0B0B !important;
+  color: #F5F2EA !important;
+}
+
+html.dark .site-header-scrolled {
+  background-color: rgba(11, 11, 11, 0.88) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark .site-nav-brand {
+  color: #F5F2EA !important;
+}
+html.dark .site-nav-link {
+  color: #A7A39A !important;
+}
+html.dark .site-nav-link:hover {
+  color: #F5F2EA !important;
+}
+html.dark .site-mobile-drawer {
+  background-color: rgba(11, 11, 11, 0.98) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+html.dark .site-mobile-toggle {
+  color: #F5F2EA !important;
+}
+html.dark .theme-toggle-btn {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark .theme-toggle-btn:hover {
+  border-color: rgba(201, 168, 106, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark .bg-\[\#151515\],
+html.dark .bg-\[\#111111\],
+html.dark .bg-\[\#161616\] {
+  background-color: #151515 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+html.dark .bg-\[\#0E0E0E\]\/75 {
+  background-color: rgba(14, 14, 14, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark .text-\[\#F5F2EA\] {
+  color: #F5F2EA !important;
+}
+html.dark .text-\[\#A7A39A\] {
+  color: #A7A39A !important;
+}
+html.dark .text-\[\#77736C\] {
+  color: #77736C !important;
+}
+html.dark .text-\[\#C9A86A\] {
+  color: #C9A86A !important;
+}
+html.dark .border-white\/\[0\.08\],
+html.dark .border-white\/\[0\.06\],
+html.dark .border-white\/10 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark .hero-primary-cta {
+  background: linear-gradient(to right, #F5F2EA, #FFFFFF, #EAE6DB) !important;
+  color: #0B0B0B !important;
+}
+html.dark .hero-secondary-cta {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #A7A39A !important;
+}
+
+
+/* 2. LIGHT MODE (Luxury Editorial Alabaster & Carbon) */
 html.light {
   --bg-primary: #FAF8F5;
   --bg-secondary: #F2EFE8;
@@ -231,57 +307,47 @@ html.light {
   --text-primary: #151412;
   --text-secondary: #57544C;
   --text-muted: #827E74;
-  --accent: #A88133;
-  --accent-hover: #8C6923;
+  --accent: #9C7428;
+  --accent-hover: #7E5B1A;
   --border-subtle: rgba(0, 0, 0, 0.08);
-  --border-hover: rgba(168, 129, 51, 0.4);
-  background-color: #FAF8F5 !important;
-  color: #151412 !important;
+  --border-hover: rgba(156, 116, 40, 0.35);
+  color-scheme: light;
 }
 
+html.light,
 html.light body,
-html.light .site-main-wrapper {
-  background-color: #FAF8F5 !important;
-  color: #151412 !important;
-}
-
+html.light .site-main-wrapper,
 html.light .cinematic-bg-container {
   background-color: #FAF8F5 !important;
+  color: #151412 !important;
 }
 
 html.light .site-header-scrolled {
-  background-color: rgba(250, 248, 245, 0.9) !important;
+  background-color: rgba(250, 248, 245, 0.92) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
-
 html.light .site-nav-brand {
   color: #151412 !important;
 }
-
 html.light .site-nav-link {
   color: #57544C !important;
 }
-
 html.light .site-nav-link:hover {
   color: #151412 !important;
 }
-
 html.light .site-mobile-drawer {
   background-color: rgba(250, 248, 245, 0.98) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
-
 html.light .site-mobile-toggle {
   color: #151412 !important;
 }
-
 html.light .theme-toggle-btn {
   border-color: rgba(0, 0, 0, 0.12) !important;
   background-color: rgba(0, 0, 0, 0.04) !important;
 }
-
 html.light .theme-toggle-btn:hover {
-  border-color: rgba(168, 129, 51, 0.4) !important;
+  border-color: rgba(156, 116, 40, 0.4) !important;
   background-color: rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -297,14 +363,14 @@ html.light .bg-\[\#181818\] {
 
 html.light .bg-\[\#0E0E0E\]\/75,
 html.light .bg-\[\#0E0E0E\] {
-  background-color: rgba(245, 242, 235, 0.85) !important;
+  background-color: rgba(245, 242, 235, 0.92) !important;
   border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
 html.light .bg-\[\#0B0B0B\]\/80,
 html.light .bg-\[\#0B0B0B\]\/70,
 html.light .bg-\[\#0B0B0B\]\/90 {
-  background-color: rgba(250, 248, 245, 0.9) !important;
+  background-color: rgba(250, 248, 245, 0.92) !important;
   border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -376,6 +442,7 @@ html.light ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.18);
 }
 html.light ::-webkit-scrollbar-thumb:hover {
-  background: #A88133;
+  background: #9C7428;
 }
+
 

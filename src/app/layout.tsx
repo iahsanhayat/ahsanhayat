@@ -95,7 +95,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-[#FAF8F5] text-[#151412] min-h-screen font-sans selection:bg-[#C9A86A]/25 selection:text-[#151412] antialiased transition-colors duration-300">
+      <body className="min-h-screen font-sans selection:bg-[#C9A86A]/25 antialiased transition-colors duration-300">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
