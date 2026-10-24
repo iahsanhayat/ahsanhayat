@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { ArrowUpRight, Play } from "lucide-react";
 import { Project } from "@/data/portfolioData";
 
@@ -32,12 +33,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) =
           isVertical ? "aspect-[4/5] sm:aspect-[3/4]" : "aspect-[16/10]"
         }`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <Image
           src={project.thumbnail}
           alt={project.title}
-          loading="lazy"
-          className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.04]"
         />
 
         {/* Ambient Overlay that darkens slightly on hover */}

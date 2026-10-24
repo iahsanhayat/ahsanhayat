@@ -115,7 +115,7 @@ export const portfolioData: PortfolioData = {
     availability: "Available for freelance projects & creative opportunities",
     summary:
       "AI video creator with 8 years in digital content, starting in Photoshop and design and now producing AI films, stories and UGC-style ads. Fiverr Level 2 Seller with a perfect 5.0 rating. Expert at keeping characters and scenes consistent across shots, the hardest part of AI filmmaking.",
-    photo: "/images/ahsan-hayat.png",
+    photo: "/images/ahsan-hayat.webp",
     cvPath: "/documents/Ahsan-Hayat-CV.pdf",
   },
 
@@ -190,10 +190,8 @@ export const portfolioData: PortfolioData = {
         "Created a full cinematic short built entirely with generative AI tools, from storyline to final cut.",
       longDescription:
         "The Ash Phoenix represents a complete cinematic short built entirely with generative AI tools, from storyline to final cut. Reached over 160K+ views on YouTube as my first long-form AI film production.",
-      thumbnail: "/images/ash-phoenix-cover.jpg",
+      thumbnail: "/images/ash-phoenix-cover.webp",
       video: "/videos/ash-phoenix.mp4",
-      youtubeUrl: "https://youtu.be/y8lzDWuzkEo?si=GdgywJpM63hjWbLB",
-      youtubeId: "y8lzDWuzkEo",
       aspectRatio: "16:9",
       featured: true,
       role: [
@@ -218,7 +216,7 @@ export const portfolioData: PortfolioData = {
         "Delivered two AI-generated story videos for clients, covering concept development, generation, storytelling and final production.",
       longDescription:
         "Commercial AI storytelling project covering character consistency, situational humor, and multi-track audio synchronization tailored to client specifications.",
-      thumbnail: "/images/fruit-story-01.jpg",
+      thumbnail: "/images/fruit-story-01.webp",
       video: "/videos/fruit-story-01.mp4",
       aspectRatio: "9:16",
       isClientProject: true,
@@ -243,7 +241,7 @@ export const portfolioData: PortfolioData = {
         "Delivered two AI-generated story videos for clients, covering concept development, generation, storytelling and final production.",
       longDescription:
         "Second installment in the client series designed for mobile-first engagement with rapid comedic pacing and expressive character movement.",
-      thumbnail: "/images/fruit-story-02.jpg",
+      thumbnail: "/images/fruit-story-02.webp",
       video: "/videos/fruit-story-02.mp4",
       aspectRatio: "9:16",
       isClientProject: true,
@@ -267,7 +265,7 @@ export const portfolioData: PortfolioData = {
         "Produced a UGC-style AI advertisement designed to feel native on social feeds and ready for paid and organic marketing use.",
       longDescription:
         "A native short-form advertisement designed specifically for TikTok, Reels and Facebook feeds with high-converting retention hooks.",
-      thumbnail: "/images/ai-ugc-ad.jpg",
+      thumbnail: "/images/ai-ugc-ad.webp",
       video: "/videos/ai-ugc-ad.mp4",
       aspectRatio: "9:16",
       role: [
@@ -335,9 +333,8 @@ export const portfolioData: PortfolioData = {
   ],
 
   tools: [
-    { name: "Google Veo", category: "Video Generation" },
     { name: "Seedance", category: "Video Generation" },
-    { name: "OmniFlash", category: "AI Technology" },
+    { name: "Google Veo", category: "Video Generation" },
     { name: "Higgsfield", category: "Video Generation" },
     { name: "ElevenLabs", category: "Voice & Audio" },
     { name: "CapCut", category: "Editing & Finishing" },
@@ -366,7 +363,7 @@ export const portfolioData: PortfolioData = {
     {
       platform: "FIVERR",
       label: "Fiverr Profile",
-      url: "https://fiverr.com/",
+      url: "https://www.fiverr.com/startic1122",
       active: true,
       type: "external",
     },

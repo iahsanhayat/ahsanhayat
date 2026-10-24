@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Mail, MessageCircle, Phone, MapPin, Globe, ArrowUpRight } from "lucide-react";
+import { Mail, MessageCircle } from "lucide-react";
 import { SocialLink } from "@/data/portfolioData";
 
 interface ContactSectionProps {
@@ -23,7 +23,7 @@ interface ContactSectionProps {
 
 export const ContactSection: React.FC<ContactSectionProps> = ({ personal }) => {
   return (
-    <section id="contact" className="py-28 px-6 md:px-12 max-w-7xl mx-auto space-y-16">
+    <section id="contact" className="py-24 px-6 md:px-12 max-w-7xl mx-auto space-y-12">
       <div className="text-center space-y-4">
         <div className="inline-flex items-center space-x-2.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#C9A86A]" />
@@ -64,64 +64,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ personal }) => {
           >
             <Mail className="w-4 h-4 mr-2.5 text-[#C9A86A] group-hover:scale-110 transition-transform duration-300" />
             <span>Email Me</span>
-          </a>
-        </div>
-      </div>
-
-      {/* Structured Verified Contact Card */}
-      <div className="max-w-3xl mx-auto p-8 rounded-lg bg-[#151515] border border-white/[0.08] grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-        {/* Creator Info */}
-        <div className="space-y-3">
-          <div className="text-xs font-mono tracking-widest uppercase text-[#C9A86A]">
-            DIRECT CONTACT
-          </div>
-          <h3 className="text-xl font-bold tracking-tight text-[#F5F2EA]">
-            {personal.name}
-          </h3>
-          <p className="text-xs text-[#A7A39A]">
-            {personal.title}
-          </p>
-
-          <div className="flex items-center space-x-2 text-xs text-[#A7A39A] pt-2">
-            <MapPin className="w-3.5 h-3.5 text-[#C9A86A]" />
-            <span>{personal.location}</span>
-          </div>
-        </div>
-
-        {/* Clickable Links: Phone, Email, Portfolio */}
-        <div className="space-y-3 flex flex-col justify-center text-xs">
-          {/* Phone (Clickable on Mobile via tel:) */}
-          <a
-            href={personal.phoneTel}
-            className="flex items-center space-x-3 text-[#A7A39A] hover:text-[#F5F2EA] transition-colors p-2 rounded bg-white/[0.02] border border-white/[0.04]"
-          >
-            <Phone className="w-3.5 h-3.5 text-[#C9A86A]" />
-            <span className="font-mono">{personal.phone}</span>
-          </a>
-
-          {/* Email (Opens Gmail compose directly in new tab) */}
-          <a
-            href={personal.gmailComposeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center space-x-3 text-[#A7A39A] hover:text-[#F5F2EA] transition-colors p-2 rounded bg-white/[0.02] border border-white/[0.04]"
-          >
-            <Mail className="w-3.5 h-3.5 text-[#C9A86A]" />
-            <span>{personal.email}</span>
-          </a>
-
-          {/* Portfolio Domain */}
-          <a
-            href={personal.portfolioFullUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between text-[#A7A39A] hover:text-[#C9A86A] transition-colors p-2 rounded bg-white/[0.02] border border-white/[0.04]"
-          >
-            <div className="flex items-center space-x-3">
-              <Globe className="w-3.5 h-3.5 text-[#C9A86A]" />
-              <span className="font-mono">{personal.portfolioUrl}</span>
-            </div>
-            <ArrowUpRight className="w-3 h-3" />
           </a>
         </div>
       </div>

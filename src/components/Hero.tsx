@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { ArrowDown, Download, Film, Sparkles } from "lucide-react";
 
 interface HeroProps {
@@ -128,10 +129,12 @@ export const Hero: React.FC<HeroProps> = ({ personal }) => {
             {/* Continuous Cinematic Floating Portrait Container */}
             <div className="relative w-full flex items-center justify-center animate-[floatGently_4.5s_ease-in-out_infinite]">
               {!imgFailed ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={personal.photo}
                   alt={personal.name}
+                  width={440}
+                  height={504}
+                  priority
                   onError={() => setImgFailed(true)}
                   className="w-full h-auto object-contain filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.85)] transition-all duration-500 group-hover:scale-105 group-hover:drop-shadow-[0_30px_60px_rgba(234,179,8,0.3)]"
                 />

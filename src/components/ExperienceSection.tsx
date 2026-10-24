@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Briefcase, GraduationCap, Video, Palette, CheckCircle } from "lucide-react";
+import { Briefcase, GraduationCap, Video, Palette, CheckCircle, ArrowUpRight } from "lucide-react";
 
 interface ExperienceSectionProps {
   experience: {
@@ -56,17 +56,35 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
           <div className="p-8 rounded-lg bg-[#151515] border border-white/[0.08] hover:border-[#C9A86A]/40 transition-all duration-300 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-5">
               <div>
-                <span className="text-xs font-mono tracking-widest uppercase text-[#C9A86A]">
-                  {experience.platform}
-                </span>
+                <a
+                  href="https://www.fiverr.com/startic1122"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-1.5 text-xs font-mono tracking-widest uppercase text-[#C9A86A] hover:text-[#E0C487] transition-colors group/fiverr"
+                  title="Open Fiverr Profile (startic1122)"
+                >
+                  <span>{experience.platform}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover/fiverr:translate-x-0.5 group-hover/fiverr:-translate-y-0.5" />
+                </a>
                 <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F2EA] mt-1">
                   {experience.position}
                 </h3>
               </div>
 
-              <span className="text-xs px-3 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-[#A7A39A] font-medium self-start sm:self-auto">
-                {experience.dates}
-              </span>
+              <div className="flex items-center space-x-2 self-start sm:self-auto">
+                <a
+                  href="https://www.fiverr.com/startic1122"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] px-3 py-1 rounded bg-[#C9A86A]/10 hover:bg-[#C9A86A]/20 border border-[#C9A86A]/25 text-[#C9A86A] font-semibold tracking-wider uppercase transition-colors inline-flex items-center space-x-1"
+                >
+                  <span>Visit Profile</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </a>
+                <span className="text-xs px-3 py-1 rounded bg-white/[0.04] border border-white/[0.08] text-[#A7A39A] font-medium">
+                  {experience.dates}
+                </span>
+              </div>
             </div>
 
             {/* Responsibilities list */}

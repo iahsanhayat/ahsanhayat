@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Play, Sparkles, Clock, ArrowUpRight } from "lucide-react";
 import { Project } from "@/data/portfolioData";
 
@@ -18,9 +19,8 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = ({
       {/* Animated Anamorphic Lens Flare Line */}
       <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#C9A86A]/25 to-transparent pointer-events-none blur-[0.5px]" />
 
-      {/* Dynamic Animated Ambient Light Auras */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-gradient-to-tr from-[#C9A86A]/20 via-[#EAB308]/25 to-transparent rounded-full blur-[170px] pointer-events-none animate-pulse" />
-      <div className="absolute top-1/4 right-1/4 w-[500px] h-[500px] bg-[#C9A86A]/15 rounded-full blur-[150px] pointer-events-none animate-[pulse_6s_ease-in-out_infinite]" />
+      {/* Ambient Light Aura */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-gradient-to-tr from-[#C9A86A]/15 via-[#EAB308]/15 to-transparent rounded-full blur-[100px] pointer-events-none opacity-60" />
 
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Section Header */}
@@ -62,11 +62,12 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = ({
           aria-label={`Watch ${project.title}`}
         >
           {/* Main Poster Image */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={project.thumbnail}
             alt={project.title}
-            className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            fill
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-[1.03]"
           />
 
           {/* Cinematic Vignette Overlay */}

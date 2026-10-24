@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { MapPin, Globe, Sparkles, CheckCircle2, Star, Eye } from "lucide-react";
 
 interface AboutProps {
@@ -45,10 +46,11 @@ export const About: React.FC<AboutProps> = ({ personal, stats }) => {
 
               <div className="relative w-full flex items-center justify-center">
                 {!imgFailed ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={personal.photo}
                     alt={personal.name}
+                    width={320}
+                    height={366}
                     onError={() => setImgFailed(true)}
                     className="w-full h-auto object-contain filter drop-shadow-[0_20px_35px_rgba(0,0,0,0.7)] transition-transform duration-500 group-hover:scale-[1.03]"
                   />
