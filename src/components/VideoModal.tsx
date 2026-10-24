@@ -16,6 +16,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Project } from "@/data/portfolioData";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface VideoModalProps {
   project: Project | null;
@@ -23,6 +24,9 @@ interface VideoModalProps {
 }
 
 export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -39,10 +43,20 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   const [showControls, setShowControls] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [showCenterIcon, setShowCenterIcon] = useState<"play" | "pause" | null>(null);
+  const [needsTapToUnmute, setNeedsTapToUnmute] = useState(false);
 
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bufferingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const centerIconTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Lock background scroll while modal is active, restore when closed
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -54,33 +68,57 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   const triggerCenterIcon = (type: "play" | "pause") => {
     setShowCenterIcon(type);
     if (centerIconTimerRef.current) clearTimeout(centerIconTimerRef.current);
-    centerIconTimerRef.current = setTimeout(() => setShowCenterIcon(null), 500);
+    centerIconTimerRef.current = setTimeout(() => setShowCenterIcon(null), 450);
   };
+
+  // Safe Exit handler that stops video and returns to main website immediately
+  const handleExit = useCallback(
+    (e?: React.MouseEvent) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      onClose();
+    },
+    [onClose]
+  );
 
   const handlePlayPause = useCallback(() => {
     if (!videoRef.current) return;
-    if (videoRef.current.paused) {
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-            setIsBuffering(false);
-            triggerCenterIcon("play");
-          })
-          .catch((err) => {
-            console.warn("Play aborted or prevented:", err);
-            setIsPlaying(false);
-            setIsBuffering(false);
-          });
+    const v = videoRef.current;
+    if (v.paused) {
+      if (needsTapToUnmute) {
+        v.muted = false;
+        setIsMuted(false);
+        setNeedsTapToUnmute(false);
       }
+      v.play()
+        .then(() => {
+          setIsPlaying(true);
+          setIsBuffering(false);
+          triggerCenterIcon("play");
+        })
+        .catch(() => {
+          setIsPlaying(false);
+        });
     } else {
-      videoRef.current.pause();
+      v.pause();
       setIsPlaying(false);
       setIsBuffering(false);
       triggerCenterIcon("pause");
     }
-  }, []);
+  }, [needsTapToUnmute]);
+
+  const handleUnmute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!videoRef.current) return;
+    videoRef.current.muted = false;
+    setIsMuted(false);
+    setNeedsTapToUnmute(false);
+  };
 
   const handleTimeUpdate = () => {
     if (!videoRef.current || isScrubbing) return;
@@ -134,6 +172,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
       videoRef.current.volume = val;
       videoRef.current.muted = val === 0;
       setIsMuted(val === 0);
+      if (val > 0) setNeedsTapToUnmute(false);
     }
   };
 
@@ -142,6 +181,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     const nextMuted = !isMuted;
     videoRef.current.muted = nextMuted;
     setIsMuted(nextMuted);
+    if (!nextMuted) setNeedsTapToUnmute(false);
   };
 
   const toggleFullscreen = () => {
@@ -155,14 +195,14 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     }
   };
 
-  // Keyboard accessibility: Backspace or Escape closes modal and returns to main website where user was
+  // Keyboard accessibility: Backspace or Escape closes modal and returns to main website
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (e.key === "Backspace" || e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        handleExit();
       } else if (e.key === " " || e.key === "k") {
         e.preventDefault();
         handlePlayPause();
@@ -175,7 +215,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handlePlayPause, onClose]);
+  }, [handleExit, handlePlayPause]);
 
   // Controls auto-hide
   const resetControlsTimer = () => {
@@ -188,19 +228,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     }
   };
 
-  const handleWaiting = () => {
-    if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-    bufferingTimerRef.current = setTimeout(() => {
-      setIsBuffering(true);
-    }, 200);
-  };
-
-  const handleCanPlay = () => {
-    if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-    setIsBuffering(false);
-  };
-
-  // Reset and auto-play attempt when project changes
+  // Instant Playback Engine: tries normal audio play, seamlessly falls back to muted play
   useEffect(() => {
     setIsPlaying(false);
     setIsBuffering(false);
@@ -208,10 +236,13 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     setBufferedPercent(0);
     setCurrentTime("0:00");
     setDuration("0:00");
+    setNeedsTapToUnmute(false);
 
     if (!videoRef.current) return;
     const video = videoRef.current;
+    video.currentTime = 0;
 
+    // 1. Attempt unmuted audio play first
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise
@@ -220,8 +251,20 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
           setIsBuffering(false);
         })
         .catch(() => {
-          setIsPlaying(false);
-          setIsBuffering(false);
+          // 2. If browser autoplay policy blocked sound, start playing muted immediately with zero lag!
+          video.muted = true;
+          setIsMuted(true);
+          setNeedsTapToUnmute(true);
+          video
+            .play()
+            .then(() => {
+              setIsPlaying(true);
+              setIsBuffering(false);
+            })
+            .catch(() => {
+              setIsPlaying(false);
+              setIsBuffering(false);
+            });
         });
     }
 
@@ -238,35 +281,42 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 bg-black/85 backdrop-blur-2xl animate-fade-in overflow-y-auto"
-      onClick={onClose}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 ${
+        isLight
+          ? "bg-[#FAF8F5]/92 backdrop-blur-2xl text-[#151412]"
+          : "bg-[#0B0B0B]/92 backdrop-blur-2xl text-[#F5F2EA]"
+      } animate-fade-in overflow-y-auto transition-colors duration-300`}
+      onClick={handleExit}
     >
-      {/* Top Floating Utility Bar (Quick Exit & Backspace Tip) */}
-      <div className="fixed top-4 left-4 right-4 sm:top-6 sm:left-8 sm:right-8 z-50 flex items-center justify-between pointer-events-none">
+      {/* Top Floating Header with Prominent BACK Button */}
+      <header className="fixed top-4 left-4 right-4 sm:top-6 sm:left-8 sm:right-8 z-[60] flex items-center justify-between pointer-events-auto">
         <button
-          onClick={onClose}
+          onClick={handleExit}
           type="button"
-          className="pointer-events-auto inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[#F5F2EA] backdrop-blur-md text-xs font-semibold tracking-wider transition-all"
+          className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
+            isLight
+              ? "bg-white/90 hover:bg-white text-[#151412] border border-black/10 shadow-md"
+              : "bg-white/10 hover:bg-white/20 text-[#F5F2EA] border border-white/15 shadow-xl"
+          } backdrop-blur-md text-xs font-bold tracking-widest uppercase transition-all cursor-pointer`}
+          aria-label="Return to website"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-4 h-4 mr-0.5" />
           <span>BACK</span>
         </button>
 
-        <div className="flex items-center space-x-3 pointer-events-auto">
-          <span className="hidden sm:inline-block text-[11px] uppercase tracking-wider text-white/50 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
-            Press <kbd className="text-[#C9A86A] font-bold">⌫ Backspace</kbd> to exit
-          </span>
-
-          <button
-            onClick={onClose}
-            type="button"
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-[#F5F2EA] flex items-center justify-center transition-all focus:outline-none"
-            aria-label="Close viewer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+        <button
+          onClick={handleExit}
+          type="button"
+          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+            isLight
+              ? "bg-white/90 hover:bg-white text-[#151412] border border-black/10 shadow-md"
+              : "bg-white/10 hover:bg-white/20 text-[#F5F2EA] border border-white/15 shadow-xl"
+          } backdrop-blur-md transition-all cursor-pointer focus:outline-none`}
+          aria-label="Close viewer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </header>
 
       {/* Main Content Modal Container */}
       <div
@@ -280,33 +330,62 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
         }`}
       >
         {/* ====================================================================
-            THE REALISTIC IPHONE MOCKUP (Portrait vs Landscape Orientation)
+            THE REALISTIC IPHONE MOCKUP (Light & Dark Titanium Adaptive)
            ==================================================================== */}
-        <div className="relative shrink-0 flex items-center justify-center">
+        <div className="relative shrink-0 flex items-center justify-center pt-8 sm:pt-0">
           {/* Outer Titanium Phone Shell */}
           <div
             className={`relative ${
               isVertical
-                ? "w-[310px] sm:w-[350px] md:w-[370px] aspect-[9/19.5] rounded-[52px]"
+                ? "w-[305px] sm:w-[340px] md:w-[365px] aspect-[9/19.5] rounded-[52px]"
                 : "w-full max-w-[820px] aspect-[19.5/9] rounded-[48px]"
-            } bg-[#181817] p-2.5 sm:p-3 shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.12)] border-[3px] border-[#363532] transition-all`}
+            } ${
+              isLight
+                ? "bg-[#E6E4DF] border-[3px] border-[#D1CEC7] shadow-[0_25px_80px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.06)]"
+                : "bg-[#181817] border-[3px] border-[#363532] shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.12)]"
+            } p-2.5 sm:p-3 transition-all`}
           >
-            {/* Side Hardware Buttons (Authentic Titanium Buttons) */}
+            {/* Side Hardware Buttons */}
             {isVertical ? (
               <>
-                {/* Left Side: Action Button & Volume Buttons */}
-                <div className="absolute -left-[5px] top-24 w-[3px] h-7 bg-[#2e2d2a] rounded-l" />
-                <div className="absolute -left-[5px] top-36 w-[3px] h-12 bg-[#2e2d2a] rounded-l" />
-                <div className="absolute -left-[5px] top-52 w-[3px] h-12 bg-[#2e2d2a] rounded-l" />
-                {/* Right Side: Power / Lock Button */}
-                <div className="absolute -right-[5px] top-32 w-[3px] h-16 bg-[#2e2d2a] rounded-r" />
+                <div
+                  className={`absolute -left-[5px] top-24 w-[3px] h-7 rounded-l ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
+                <div
+                  className={`absolute -left-[5px] top-36 w-[3px] h-12 rounded-l ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
+                <div
+                  className={`absolute -left-[5px] top-52 w-[3px] h-12 rounded-l ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
+                <div
+                  className={`absolute -right-[5px] top-32 w-[3px] h-16 rounded-r ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
               </>
             ) : (
               <>
-                {/* Landscape Top Side: Action & Volume Buttons */}
-                <div className="absolute top-[-5px] left-24 h-[3px] w-7 bg-[#2e2d2a] rounded-t" />
-                <div className="absolute top-[-5px] left-36 h-[3px] w-12 bg-[#2e2d2a] rounded-t" />
-                <div className="absolute top-[-5px] left-52 h-[3px] w-12 bg-[#2e2d2a] rounded-t" />
+                <div
+                  className={`absolute top-[-5px] left-24 h-[3px] w-7 rounded-t ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
+                <div
+                  className={`absolute top-[-5px] left-36 h-[3px] w-12 rounded-t ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
+                <div
+                  className={`absolute top-[-5px] left-52 h-[3px] w-12 rounded-t ${
+                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
+                  }`}
+                />
               </>
             )}
 
@@ -323,7 +402,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
                   <span className="text-[11px] font-semibold tracking-tight">9:41</span>
 
                   {/* Dynamic Island Pill */}
-                  <div className="w-[102px] h-[26px] rounded-full bg-black border border-white/5 flex items-center justify-between px-2.5 shadow-md">
+                  <div className="w-[102px] h-[26px] rounded-full bg-black border border-white/10 flex items-center justify-between px-2.5 shadow-md">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#121315] border border-white/10" />
                     <div className="w-1.5 h-1.5 rounded-full bg-[#0a1828]" />
                   </div>
@@ -336,34 +415,59 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
                 </div>
               )}
 
-              {/* Dynamic Island in Landscape (Placed on the left rim as in real rotated iPhone) */}
+              {/* Dynamic Island in Landscape */}
               {!isVertical && (
                 <div className="absolute left-2 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
-                  <div className="h-[96px] w-[24px] rounded-full bg-black border border-white/5 flex flex-col items-center justify-between py-2 shadow-md">
+                  <div className="h-[96px] w-[24px] rounded-full bg-black border border-white/10 flex flex-col items-center justify-between py-2 shadow-md">
                     <div className="w-2.5 h-2.5 rounded-full bg-[#121315] border border-white/10" />
                     <div className="w-1.5 h-1.5 rounded-full bg-[#0a1828]" />
                   </div>
                 </div>
               )}
 
-              {/* Video Element (Fills the phone display seamlessly) */}
+              {/* Tap to Unmute Overlay Banner (Shows if browser muted audio autoplay) */}
+              {needsTapToUnmute && (
+                <button
+                  onClick={handleUnmute}
+                  type="button"
+                  className="absolute top-14 z-30 px-3.5 py-1.5 rounded-full bg-[#C9A86A] text-black font-bold text-xs tracking-wider shadow-lg flex items-center space-x-1.5 animate-bounce"
+                >
+                  <VolumeX className="w-3.5 h-3.5" />
+                  <span>TAP FOR SOUND</span>
+                </button>
+              )}
+
+              {/* Video Element */}
               <video
                 key={project.id}
                 ref={videoRef}
                 src={project.video}
                 poster={project.thumbnail}
-                preload="auto"
+                autoPlay
                 playsInline
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onProgress={updateBuffered}
-                onWaiting={handleWaiting}
+                preload="auto"
+                onPlay={() => {
+                  setIsPlaying(true);
+                  setIsBuffering(false);
+                }}
+                onPause={() => setIsPlaying(false)}
                 onPlaying={() => {
-                  if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
                   setIsBuffering(false);
                   setIsPlaying(true);
                 }}
-                onCanPlay={handleCanPlay}
+                onLoadedData={() => setIsBuffering(false)}
+                onCanPlay={() => setIsBuffering(false)}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onProgress={updateBuffered}
+                onWaiting={() => {
+                  if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
+                  bufferingTimerRef.current = setTimeout(() => {
+                    if (videoRef.current && !videoRef.current.paused) {
+                      setIsBuffering(true);
+                    }
+                  }, 600);
+                }}
                 onSeeked={() => {
                   if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
                   setIsBuffering(false);
@@ -388,16 +492,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
                       <Pause className="w-7 h-7 fill-current" />
                     )}
                   </div>
-                </div>
-              )}
-
-              {/* Buffering Indicator */}
-              {isBuffering && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-black/40 backdrop-blur-[2px]">
-                  <div className="w-10 h-10 rounded-full border-2 border-[#C9A86A]/30 border-t-[#C9A86A] animate-spin mb-2" />
-                  <span className="text-[10px] font-bold tracking-widest text-[#C9A86A] uppercase">
-                    Loading
-                  </span>
                 </div>
               )}
 
@@ -500,47 +594,69 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
         </div>
 
         {/* ====================================================================
-            PROJECT INFORMATION CARD (Elegantly positioned beside/below phone)
+            PROJECT INFORMATION CARD (Adaptive Theme in Light vs Dark Mode)
            ==================================================================== */}
         <div
-          className={`flex-1 w-full bg-[#141413]/90 border border-white/10 rounded-2xl p-6 sm:p-7 backdrop-blur-xl shadow-2xl text-left space-y-5 ${
+          className={`flex-1 w-full ${
+            isLight
+              ? "bg-white/95 border-black/[0.08] text-[#151412] shadow-xl"
+              : "bg-[#141413]/95 border-white/10 text-[#F5F2EA] shadow-2xl"
+          } border rounded-2xl p-6 sm:p-7 backdrop-blur-xl text-left space-y-5 ${
             isVertical ? "max-w-md lg:max-w-lg" : "max-w-4xl"
-          }`}
+          } transition-colors duration-300`}
         >
           {/* Header & Category */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center space-x-2.5">
-              <span className="w-2 h-2 rounded-full bg-[#C9A86A]" />
-              <span className="text-[11px] font-bold tracking-[0.2em] text-[#C9A86A] uppercase">
+              <span className={`w-2 h-2 rounded-full ${isLight ? "bg-[#9C7428]" : "bg-[#C9A86A]"}`} />
+              <span
+                className={`text-[11px] font-bold tracking-[0.2em] ${
+                  isLight ? "text-[#9C7428]" : "text-[#C9A86A]"
+                } uppercase`}
+              >
                 {project.category}
               </span>
             </div>
 
             {project.isClientProject && (
-              <span className="text-[10px] tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#C9A86A]/15 text-[#E0C487] border border-[#C9A86A]/30">
+              <span
+                className={`text-[10px] tracking-wider uppercase px-2.5 py-0.5 rounded-full ${
+                  isLight
+                    ? "bg-[#9C7428]/10 text-[#9C7428] border border-[#9C7428]/25"
+                    : "bg-[#C9A86A]/15 text-[#E0C487] border border-[#C9A86A]/30"
+                }`}
+              >
                 Client Project
               </span>
             )}
           </div>
 
           <div>
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#F5F2EA]">
+            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
               {project.title}
             </h3>
-            <p className="text-sm text-[#A7A39A] mt-2 leading-relaxed">
+            <p className={`text-sm mt-2 leading-relaxed ${isLight ? "text-[#57544C]" : "text-[#A7A39A]"}`}>
               {project.longDescription || project.description}
             </p>
           </div>
 
           {/* Duration & Roles */}
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10 text-xs">
+          <div
+            className={`grid grid-cols-2 gap-4 pt-4 border-t ${
+              isLight ? "border-black/[0.08]" : "border-white/10"
+            } text-xs`}
+          >
             <div>
-              <span className="text-[10px] uppercase tracking-widest text-[#77736C]">Duration</span>
-              <p className="font-semibold text-[#F5F2EA] mt-0.5">{project.duration || "N/A"}</p>
+              <span className={`text-[10px] uppercase tracking-widest ${isLight ? "text-[#827E74]" : "text-[#77736C]"}`}>
+                Duration
+              </span>
+              <p className="font-semibold mt-0.5">{project.duration || "N/A"}</p>
             </div>
             <div>
-              <span className="text-[10px] uppercase tracking-widest text-[#77736C]">Format</span>
-              <p className="font-semibold text-[#F5F2EA] mt-0.5">
+              <span className={`text-[10px] uppercase tracking-widest ${isLight ? "text-[#827E74]" : "text-[#77736C]"}`}>
+                Format
+              </span>
+              <p className="font-semibold mt-0.5">
                 {isVertical ? "Vertical (9:16 Mobile)" : "Widescreen (16:9)"}
               </p>
             </div>
@@ -548,12 +664,18 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
           {/* Tools Used */}
           <div className="space-y-2 pt-2">
-            <span className="text-[10px] uppercase tracking-widest text-[#77736C]">Tools Used</span>
+            <span className={`text-[10px] uppercase tracking-widest ${isLight ? "text-[#827E74]" : "text-[#77736C]"}`}>
+              Tools Used
+            </span>
             <div className="flex flex-wrap gap-1.5">
               {project.tools.map((t) => (
                 <span
                   key={t}
-                  className="text-xs px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-[#C9A86A]"
+                  className={`text-xs px-2.5 py-1 rounded-md ${
+                    isLight
+                      ? "bg-[#FAF8F5] border border-black/[0.08] text-[#9C7428]"
+                      : "bg-white/5 border border-white/10 text-[#C9A86A]"
+                  }`}
                 >
                   {t}
                 </span>
@@ -562,18 +684,26 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
           </div>
 
           {/* Bottom Actions */}
-          <div className="pt-4 flex items-center justify-between border-t border-white/10">
+          <div
+            className={`pt-4 flex items-center justify-between border-t ${
+              isLight ? "border-black/[0.08]" : "border-white/10"
+            }`}
+          >
             <button
-              onClick={onClose}
-              className="text-xs font-semibold tracking-wider uppercase text-[#A7A39A] hover:text-[#C9A86A] transition-colors"
+              onClick={handleExit}
+              className={`text-xs font-semibold tracking-wider uppercase ${
+                isLight ? "text-[#57544C] hover:text-[#151412]" : "text-[#A7A39A] hover:text-[#C9A86A]"
+              } transition-colors cursor-pointer`}
             >
               ← Back to site
             </button>
 
             <a
               href="#contact"
-              onClick={onClose}
-              className="inline-flex items-center text-xs font-bold tracking-wider uppercase text-[#C9A86A] hover:text-[#E0C487] transition-colors"
+              onClick={handleExit}
+              className={`inline-flex items-center text-xs font-bold tracking-wider uppercase ${
+                isLight ? "text-[#9C7428] hover:text-[#7C5A18]" : "text-[#C9A86A] hover:text-[#E0C487]"
+              } transition-colors`}
             >
               <span>Discuss Project</span>
               <Sparkles className="w-3.5 h-3.5 ml-1.5" />
