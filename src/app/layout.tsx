@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 
+import { ThemeProvider } from "@/components/ThemeProvider";
+
 const manrope = Manrope({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
@@ -66,9 +68,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${manrope.variable} dark scroll-smooth`}>
-      <body className="bg-[#0B0B0B] text-[#F5F2EA] min-h-screen font-sans selection:bg-[#C9A86A]/25 selection:text-[#F5F2EA] antialiased">
-        {children}
+    <html lang="en" suppressHydrationWarning className={`${manrope.variable} dark scroll-smooth`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if ('scrollRestoration' in history) {
+                  history.scrollRestoration = 'manual';
+                }
+                window.scrollTo(0, 0);
+                var savedTheme = localStorage.getItem('ahsan_portfolio_theme');
+                if (savedTheme === 'light') {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.classList.add('light');
+                  document.documentElement.setAttribute('data-theme', 'light');
+                  document.documentElement.style.colorScheme = 'light';
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className="bg-[#0B0B0B] text-[#F5F2EA] min-h-screen font-sans selection:bg-[#C9A86A]/25 selection:text-[#F5F2EA] antialiased transition-colors duration-300">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

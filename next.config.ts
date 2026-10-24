@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/videos/:all*(mp4)",
+        source: "/videos/:path*",
         headers: [
           {
             key: "Cache-Control",
@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/images/:all*(webp|jpg|png|svg)",
+        source: "/images/:path*",
         headers: [
           {
             key: "Cache-Control",

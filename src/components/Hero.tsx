@@ -75,7 +75,7 @@ export const Hero: React.FC<HeroProps> = ({ personal }) => {
               {/* Unmistakable PRIMARY CTA */}
               <a
                 href="#work"
-                className="btn-shimmer group relative inline-flex items-center justify-center w-full sm:w-[235px] h-[58px] sm:h-[60px] rounded-full bg-gradient-to-r from-[#F5F2EA] via-[#FFFFFF] to-[#EAE6DB] text-[#0B0B0B] font-bold text-[13px] tracking-[0.16em] uppercase shadow-[0_12px_35px_-8px_rgba(245,242,234,0.35)] hover:shadow-[0_18px_45px_-6px_rgba(201,168,106,0.45)] hover:scale-[1.025] active:scale-[0.98] transition-all duration-300 ease-out border-t border-white"
+                className="hero-primary-cta btn-shimmer group relative inline-flex items-center justify-center w-full sm:w-[235px] h-[58px] sm:h-[60px] rounded-full bg-gradient-to-r from-[#F5F2EA] via-[#FFFFFF] to-[#EAE6DB] text-[#0B0B0B] font-bold text-[13px] tracking-[0.16em] uppercase shadow-[0_12px_35px_-8px_rgba(245,242,234,0.35)] hover:shadow-[0_18px_45px_-6px_rgba(201,168,106,0.45)] hover:scale-[1.025] active:scale-[0.98] transition-all duration-300 ease-out border-t border-white"
               >
                 <span>WATCH MY WORK</span>
                 <span className="inline-block ml-2 text-base font-semibold transition-transform duration-300 ease-out group-hover:translate-x-1.5">
@@ -87,7 +87,7 @@ export const Hero: React.FC<HeroProps> = ({ personal }) => {
               <a
                 href={personal.cvPath}
                 download
-                className="btn-shimmer group inline-flex items-center justify-center w-full sm:w-auto h-[54px] sm:h-[58px] px-8 rounded-full border border-white/[0.14] hover:border-white/[0.3] text-[#A7A39A] hover:text-[#F5F2EA] font-semibold text-xs tracking-[0.16em] uppercase backdrop-blur-md bg-white/[0.03] hover:bg-white/[0.07] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                className="hero-secondary-cta btn-shimmer group inline-flex items-center justify-center w-full sm:w-auto h-[54px] sm:h-[58px] px-8 rounded-full border border-white/[0.14] hover:border-white/[0.3] text-[#A7A39A] hover:text-[#F5F2EA] font-semibold text-xs tracking-[0.16em] uppercase backdrop-blur-md bg-white/[0.03] hover:bg-white/[0.07] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Download className="w-4 h-4 mr-2 text-[#C9A86A] group-hover:scale-110 transition-transform duration-300" />
                 <span>DOWNLOAD CV</span>

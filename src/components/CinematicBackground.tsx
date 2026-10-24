@@ -71,7 +71,7 @@ export const CinematicBackground: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#0B0B0B]">
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden cinematic-bg-container transition-colors duration-500">
       {/* 1. Full-screen Floating Cinematic Particles Canvas (Lightweight, 60fps) */}
       <canvas
         ref={canvasRef}

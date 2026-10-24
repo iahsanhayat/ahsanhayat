@@ -13,9 +13,23 @@ interface ProjectCardProps {
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onSelect }) => {
   const isVertical = project.aspectRatio === "9:16";
 
+  const handleWarmCache = () => {
+    if (typeof window === "undefined" || !project.video) return;
+    const linkId = `warm-${project.video}`;
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "prefetch";
+      link.href = project.video;
+      document.head.appendChild(link);
+    }
+  };
+
   return (
     <div
       onClick={() => onSelect(project)}
+      onMouseEnter={handleWarmCache}
+      onFocus={handleWarmCache}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();

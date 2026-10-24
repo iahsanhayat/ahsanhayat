@@ -313,7 +313,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
             ref={videoRef}
             src={project.video}
             poster={project.thumbnail}
-            preload="metadata"
+            preload="auto"
             playsInline
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}

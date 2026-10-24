@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { portfolioData, Project } from "@/data/portfolioData";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
@@ -20,6 +20,20 @@ import { CinematicBackground } from "@/components/CinematicBackground";
 export default function Home() {
   const [activeModalProject, setActiveModalProject] = useState<Project | null>(null);
 
+  // Always load the top of the site on refresh
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+      window.scrollTo(0, 0);
+
+      if (window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    }
+  }, []);
+
   // Find the featured project (The Ash Phoenix)
   const featuredProject =
     portfolioData.projects.find((p) => p.featured) || portfolioData.projects[0];
@@ -33,7 +47,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0B0B0B] text-[#F5F2EA] relative selection:bg-[#C9A86A]/30">
+    <main className="min-h-screen site-main-wrapper relative selection:bg-[#C9A86A]/30 transition-colors duration-300">
       {/* Unified Site-Wide Cinematic Background (Dust particles & ambient lighting) */}
       <CinematicBackground />
 

@@ -50,6 +50,17 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = ({
         {/* Visually Dominant Hero Poster Canvas with Click-to-Play */}
         <div
           onClick={() => onWatchFilm(project)}
+          onMouseEnter={() => {
+            if (typeof window === "undefined" || !project.video) return;
+            const id = `warm-${project.video}`;
+            if (!document.getElementById(id)) {
+              const l = document.createElement("link");
+              l.id = id;
+              l.rel = "prefetch";
+              l.href = project.video;
+              document.head.appendChild(l);
+            }
+          }}
           className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-[#151515] border border-white/[0.1] shadow-2xl cursor-pointer group"
           role="button"
           tabIndex={0}
