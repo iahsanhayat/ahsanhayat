@@ -310,7 +310,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   return (
     <div
       ref={wrapperRef}
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+      className={`fixed inset-0 z-50 overflow-y-auto overscroll-contain transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
         isEntering || isExiting ? "opacity-0 scale-[0.97]" : "opacity-100 scale-100"
       }`}
       style={{
@@ -324,14 +324,14 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
       <button
         onClick={handleExit}
         type="button"
-        className={`fixed top-5 right-5 z-[60] w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none ${
+        className={`fixed top-3 right-3 sm:top-5 sm:right-5 z-[60] w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none ${
           isLight
-            ? "bg-black/5 hover:bg-black/10 text-[#151412] border border-black/10"
-            : "bg-white/10 hover:bg-white/20 text-[#F5F2EA] border border-white/15"
+            ? "bg-white/90 hover:bg-white text-[#151412] border border-black/10 shadow-md"
+            : "bg-black/70 hover:bg-black/90 text-[#F5F2EA] border border-white/15 shadow-lg"
         } backdrop-blur-md`}
         aria-label="Close video"
       >
-        <X className="w-5 h-5" />
+        <X className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
 
       {/* Main Content Container */}
@@ -339,11 +339,12 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
         ref={containerRef}
         onClick={(e) => e.stopPropagation()}
         onMouseMove={resetControlsTimer}
-        className={`relative flex ${
+        onTouchStart={resetControlsTimer}
+        className={`relative flex min-h-full ${
           isVertical
-            ? "flex-col lg:flex-row items-center justify-center gap-8 lg:gap-10"
-            : "flex-col items-center justify-center gap-6"
-        } w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-12`}
+            ? "flex-col lg:flex-row items-center justify-start lg:justify-center gap-4 sm:gap-6 lg:gap-10"
+            : "flex-col items-center justify-start sm:justify-center gap-4 sm:gap-6"
+        } w-full max-w-6xl mx-auto px-3 sm:px-6 md:px-8 py-14 sm:py-12`}
       >
         {/* ====================================================================
             VIDEO PLAYER — Clean, no mockup, inline
@@ -351,9 +352,9 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
         <div
           className={`relative shrink-0 w-full ${
             isVertical
-              ? "max-w-[360px] lg:max-w-[380px]"
+              ? "max-w-[280px] sm:max-w-[340px] lg:max-w-[380px]"
               : "max-w-[960px]"
-          } rounded-xl overflow-hidden shadow-2xl ${
+          } rounded-lg sm:rounded-xl overflow-hidden shadow-2xl ${
             isLight
               ? "shadow-black/15 ring-1 ring-black/10"
               : "shadow-black/60 ring-1 ring-white/10"
@@ -474,12 +475,13 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
             {/* Video Controls Bar */}
             <div
               onClick={(e) => e.stopPropagation()}
-              className={`absolute bottom-0 left-0 right-0 p-4 pt-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20 transition-opacity duration-300 ${
+              onTouchStart={(e) => e.stopPropagation()}
+              className={`absolute bottom-0 left-0 right-0 p-2.5 sm:p-4 pt-8 sm:pt-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20 transition-opacity duration-300 ${
                 showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
               }`}
             >
               {/* Timeline Progress */}
-              <div className="relative mb-2.5 flex items-center group/timeline">
+              <div className="relative mb-1.5 sm:mb-2.5 flex items-center group/timeline">
                 {/* Buffer bar */}
                 <div className="absolute left-0 right-0 h-1 bg-white/15 rounded-full overflow-hidden">
                   <div
@@ -522,26 +524,26 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
               </div>
 
               {/* Control Actions */}
-              <div className="flex items-center justify-between text-white text-xs">
-                <div className="flex items-center space-x-3">
+              <div className="flex items-center justify-between text-white text-[10px] sm:text-xs">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   <button
                     onClick={handlePlayPause}
-                    className="text-white hover:text-[#C9A86A] transition-colors p-1 cursor-pointer"
+                    className="text-white hover:text-[#C9A86A] transition-colors p-0.5 sm:p-1 cursor-pointer"
                     aria-label={isPlaying ? "Pause" : "Play"}
                   >
                     {isPlaying ? (
-                      <Pause className="w-4.5 h-4.5 fill-current" />
+                      <Pause className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 fill-current" />
                     ) : (
-                      <Play className="w-4.5 h-4.5 fill-current" />
+                      <Play className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 fill-current" />
                     )}
                   </button>
 
-                  <span className="text-[11px] font-mono text-white/80 tabular-nums">
+                  <span className="text-[10px] sm:text-[11px] font-mono text-white/80 tabular-nums">
                     {currentTime} / {duration}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   {/* Volume Slider Group */}
                   <div className="hidden sm:flex items-center space-x-1.5 group/vol">
                     <button
@@ -610,8 +612,8 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
             isLight
               ? "bg-white/95 border-black/[0.08] text-[#151412] shadow-xl"
               : "bg-[#141413]/95 border-white/10 text-[#F5F2EA] shadow-2xl"
-          } border rounded-xl p-6 sm:p-7 backdrop-blur-xl text-left space-y-5 ${
-            isVertical ? "max-w-md lg:max-w-lg" : "max-w-[960px]"
+          } border rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-7 backdrop-blur-xl text-left space-y-3 sm:space-y-5 ${
+            isVertical ? "max-w-[280px] sm:max-w-md lg:max-w-lg" : "max-w-[960px]"
           } transition-colors duration-300`}
         >
           {/* Header & Category */}
@@ -641,17 +643,17 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
           </div>
 
           <div>
-            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
               {project.title}
             </h3>
-            <p className={`text-sm mt-2 leading-relaxed ${isLight ? "text-[#57544C]" : "text-[#A7A39A]"}`}>
+            <p className={`text-xs sm:text-sm mt-1.5 sm:mt-2 leading-relaxed ${isLight ? "text-[#57544C]" : "text-[#A7A39A]"}`}>
               {project.longDescription || project.description}
             </p>
           </div>
 
           {/* Duration & Format */}
           <div
-            className={`grid grid-cols-2 gap-4 pt-4 border-t ${
+            className={`grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t ${
               isLight ? "border-black/[0.08]" : "border-white/10"
             } text-xs`}
           >
@@ -672,7 +674,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
           </div>
 
           {/* Tools Used */}
-          <div className="space-y-2 pt-2">
+          <div className="space-y-1.5 sm:space-y-2 pt-1 sm:pt-2">
             <span className={`text-[10px] uppercase tracking-widest ${isLight ? "text-[#827E74]" : "text-[#77736C]"}`}>
               Tools Used
             </span>
@@ -694,7 +696,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
           {/* Bottom Actions */}
           <div
-            className={`pt-4 flex items-center justify-between border-t ${
+            className={`pt-3 sm:pt-4 flex items-center justify-between border-t ${
               isLight ? "border-black/[0.08]" : "border-white/10"
             }`}
           >
