@@ -10,10 +10,7 @@ import {
   Maximize2,
   Minimize2,
   Sparkles,
-  Wifi,
-  Battery,
-  Signal,
-  ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { Project } from "@/data/portfolioData";
 import { useTheme } from "@/components/ThemeProvider";
@@ -29,9 +26,11 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [bufferedPercent, setBufferedPercent] = useState(0);
   const [currentTime, setCurrentTime] = useState("0:00");
@@ -44,12 +43,23 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [showCenterIcon, setShowCenterIcon] = useState<"play" | "pause" | null>(null);
   const [needsTapToUnmute, setNeedsTapToUnmute] = useState(false);
+  const [isEntering, setIsEntering] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
 
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const bufferingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const centerIconTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Lock background scroll while modal is active, restore when closed
+  // Entrance animation
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsEntering(false);
+      });
+    });
+  }, []);
+
+  // Lock background scroll while player is active
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -68,22 +78,26 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
   const triggerCenterIcon = (type: "play" | "pause") => {
     setShowCenterIcon(type);
     if (centerIconTimerRef.current) clearTimeout(centerIconTimerRef.current);
-    centerIconTimerRef.current = setTimeout(() => setShowCenterIcon(null), 450);
+    centerIconTimerRef.current = setTimeout(() => setShowCenterIcon(null), 500);
   };
 
-  // Safe Exit handler that stops video and returns to main website immediately
+  // Smooth exit: animate out then call onClose
   const handleExit = useCallback(
     (e?: React.MouseEvent) => {
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
+      if (isExiting) return;
+      setIsExiting(true);
       if (videoRef.current) {
         videoRef.current.pause();
       }
-      onClose();
+      setTimeout(() => {
+        onClose();
+      }, 350);
     },
-    [onClose]
+    [onClose, isExiting]
   );
 
   const handlePlayPause = useCallback(() => {
@@ -98,7 +112,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
       v.play()
         .then(() => {
           setIsPlaying(true);
-          setIsBuffering(false);
           triggerCenterIcon("play");
         })
         .catch(() => {
@@ -107,7 +120,6 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     } else {
       v.pause();
       setIsPlaying(false);
-      setIsBuffering(false);
       triggerCenterIcon("pause");
     }
   }, [needsTapToUnmute]);
@@ -195,7 +207,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     }
   };
 
-  // Keyboard accessibility: Backspace or Escape closes modal and returns to main website
+  // Keyboard: Escape closes, space/k toggles play
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -224,14 +236,15 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     if (isPlaying) {
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false);
-      }, 2500);
+      }, 3000);
     }
   };
 
-  // Instant Playback Engine: tries normal audio play, seamlessly falls back to muted play
+  // Smooth playback engine: preload and autoplay
   useEffect(() => {
     setIsPlaying(false);
-    setIsBuffering(false);
+    setIsBuffering(true);
+    setIsVideoReady(false);
     setProgress(0);
     setBufferedPercent(0);
     setCurrentTime("0:00");
@@ -242,38 +255,53 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
     const video = videoRef.current;
     video.currentTime = 0;
 
-    // 1. Attempt unmuted audio play first
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlaying(true);
-          setIsBuffering(false);
-        })
-        .catch(() => {
-          // 2. If browser autoplay policy blocked sound, start playing muted immediately with zero lag!
-          video.muted = true;
-          setIsMuted(true);
-          setNeedsTapToUnmute(true);
-          video
-            .play()
-            .then(() => {
-              setIsPlaying(true);
-              setIsBuffering(false);
-            })
-            .catch(() => {
-              setIsPlaying(false);
-              setIsBuffering(false);
-            });
-        });
-    }
+    // Wait until enough data is buffered before attempting play
+    const onCanPlay = () => {
+      setIsVideoReady(true);
+      setIsBuffering(false);
+
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+          })
+          .catch(() => {
+            // Autoplay blocked — start muted
+            video.muted = true;
+            setIsMuted(true);
+            setNeedsTapToUnmute(true);
+            video
+              .play()
+              .then(() => {
+                setIsPlaying(true);
+                setIsBuffering(false);
+              })
+              .catch(() => {
+                setIsPlaying(false);
+                setIsBuffering(false);
+              });
+          });
+      }
+    };
+
+    video.addEventListener("canplay", onCanPlay, { once: true });
 
     return () => {
+      video.removeEventListener("canplay", onCanPlay);
       if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       if (centerIconTimerRef.current) clearTimeout(centerIconTimerRef.current);
     };
   }, [project?.id]);
+
+  // Scroll to player on mount
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
 
   if (!project) return null;
 
@@ -281,288 +309,244 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 ${
-        isLight
-          ? "bg-[#FAF8F5]/92 backdrop-blur-2xl text-[#151412]"
-          : "bg-[#0B0B0B]/92 backdrop-blur-2xl text-[#F5F2EA]"
-      } animate-fade-in overflow-y-auto transition-colors duration-300`}
+      ref={wrapperRef}
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        isEntering || isExiting ? "opacity-0 scale-[0.97]" : "opacity-100 scale-100"
+      }`}
+      style={{
+        backgroundColor: isLight ? "rgba(250,248,245,0.96)" : "rgba(11,11,11,0.96)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+      }}
       onClick={handleExit}
     >
-      {/* Top Floating Header with Prominent BACK Button */}
-      <header className="fixed top-4 left-4 right-4 sm:top-6 sm:left-8 sm:right-8 z-[60] flex items-center justify-between pointer-events-auto">
-        <button
-          onClick={handleExit}
-          type="button"
-          className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
-            isLight
-              ? "bg-white/90 hover:bg-white text-[#151412] border border-black/10 shadow-md"
-              : "bg-white/10 hover:bg-white/20 text-[#F5F2EA] border border-white/15 shadow-xl"
-          } backdrop-blur-md text-xs font-bold tracking-widest uppercase transition-all cursor-pointer`}
-          aria-label="Return to website"
-        >
-          <ArrowLeft className="w-4 h-4 mr-0.5" />
-          <span>BACK</span>
-        </button>
+      {/* Close Button — Fixed Top Right */}
+      <button
+        onClick={handleExit}
+        type="button"
+        className={`fixed top-5 right-5 z-[60] w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer focus:outline-none ${
+          isLight
+            ? "bg-black/5 hover:bg-black/10 text-[#151412] border border-black/10"
+            : "bg-white/10 hover:bg-white/20 text-[#F5F2EA] border border-white/15"
+        } backdrop-blur-md`}
+        aria-label="Close video"
+      >
+        <X className="w-5 h-5" />
+      </button>
 
-        <button
-          onClick={handleExit}
-          type="button"
-          className={`w-10 h-10 rounded-full flex items-center justify-center ${
-            isLight
-              ? "bg-white/90 hover:bg-white text-[#151412] border border-black/10 shadow-md"
-              : "bg-white/10 hover:bg-white/20 text-[#F5F2EA] border border-white/15 shadow-xl"
-          } backdrop-blur-md transition-all cursor-pointer focus:outline-none`}
-          aria-label="Close viewer"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </header>
-
-      {/* Main Content Modal Container */}
+      {/* Main Content Container */}
       <div
         ref={containerRef}
         onClick={(e) => e.stopPropagation()}
         onMouseMove={resetControlsTimer}
-        className={`relative my-auto flex flex-col ${
+        className={`relative flex ${
           isVertical
-            ? "lg:flex-row items-center justify-center gap-8 lg:gap-12 max-w-5xl w-full"
-            : "items-center justify-center gap-6 max-w-5xl w-full"
-        }`}
+            ? "flex-col lg:flex-row items-center justify-center gap-8 lg:gap-10"
+            : "flex-col items-center justify-center gap-6"
+        } w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-12`}
       >
         {/* ====================================================================
-            THE REALISTIC IPHONE MOCKUP (Light & Dark Titanium Adaptive)
+            VIDEO PLAYER — Clean, no mockup, inline
            ==================================================================== */}
-        <div className="relative shrink-0 flex items-center justify-center pt-8 sm:pt-0">
-          {/* Outer Titanium Phone Shell */}
+        <div
+          className={`relative shrink-0 w-full ${
+            isVertical
+              ? "max-w-[360px] lg:max-w-[380px]"
+              : "max-w-[960px]"
+          } rounded-xl overflow-hidden shadow-2xl ${
+            isLight
+              ? "shadow-black/15 ring-1 ring-black/10"
+              : "shadow-black/60 ring-1 ring-white/10"
+          } group cursor-pointer select-none`}
+          onClick={handlePlayPause}
+        >
+          {/* Video Aspect Container */}
           <div
-            className={`relative ${
-              isVertical
-                ? "w-[305px] sm:w-[340px] md:w-[365px] aspect-[9/19.5] rounded-[52px]"
-                : "w-full max-w-[820px] aspect-[19.5/9] rounded-[48px]"
-            } ${
-              isLight
-                ? "bg-[#E6E4DF] border-[3px] border-[#D1CEC7] shadow-[0_25px_80px_rgba(0,0,0,0.18),0_0_0_1px_rgba(0,0,0,0.06)]"
-                : "bg-[#181817] border-[3px] border-[#363532] shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.12)]"
-            } p-2.5 sm:p-3 transition-all`}
+            className={`relative w-full ${
+              isVertical ? "aspect-[9/16]" : "aspect-video"
+            } bg-black`}
           >
-            {/* Side Hardware Buttons */}
-            {isVertical ? (
-              <>
-                <div
-                  className={`absolute -left-[5px] top-24 w-[3px] h-7 rounded-l ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-                <div
-                  className={`absolute -left-[5px] top-36 w-[3px] h-12 rounded-l ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-                <div
-                  className={`absolute -left-[5px] top-52 w-[3px] h-12 rounded-l ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-                <div
-                  className={`absolute -right-[5px] top-32 w-[3px] h-16 rounded-r ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-              </>
-            ) : (
-              <>
-                <div
-                  className={`absolute top-[-5px] left-24 h-[3px] w-7 rounded-t ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-                <div
-                  className={`absolute top-[-5px] left-36 h-[3px] w-12 rounded-t ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-                <div
-                  className={`absolute top-[-5px] left-52 h-[3px] w-12 rounded-t ${
-                    isLight ? "bg-[#BCB8AD]" : "bg-[#2e2d2a]"
-                  }`}
-                />
-              </>
-            )}
+            {/* Video Element */}
+            <video
+              key={project.id}
+              ref={videoRef}
+              src={project.video}
+              poster={project.thumbnail}
+              autoPlay
+              playsInline
+              preload="auto"
+              onPlay={() => {
+                setIsPlaying(true);
+                setIsBuffering(false);
+              }}
+              onPause={() => setIsPlaying(false)}
+              onPlaying={() => {
+                setIsBuffering(false);
+                setIsPlaying(true);
+              }}
+              onLoadedData={() => {
+                setIsVideoReady(true);
+                setIsBuffering(false);
+              }}
+              onCanPlay={() => {
+                setIsVideoReady(true);
+                setIsBuffering(false);
+              }}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onProgress={updateBuffered}
+              onWaiting={() => {
+                if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
+                bufferingTimerRef.current = setTimeout(() => {
+                  if (videoRef.current && !videoRef.current.paused) {
+                    setIsBuffering(true);
+                  }
+                }, 200);
+              }}
+              onSeeked={() => {
+                if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
+                setIsBuffering(false);
+              }}
+              onEnded={() => {
+                setIsPlaying(false);
+                setIsBuffering(false);
+                setShowControls(true);
+              }}
+              className={`absolute inset-0 w-full h-full ${
+                isVertical ? "object-cover" : "object-contain"
+              } bg-black transition-opacity duration-300 ${
+                isVideoReady ? "opacity-100" : "opacity-0"
+              }`}
+            />
 
-            {/* Inner Phone Screen Canvas */}
-            <div
-              className={`relative w-full h-full bg-black ${
-                isVertical ? "rounded-[42px]" : "rounded-[38px]"
-              } overflow-hidden cursor-pointer select-none group flex items-center justify-center`}
-              onClick={handlePlayPause}
-            >
-              {/* Dynamic Island & iOS Status Bar (Portrait) */}
-              {isVertical && (
-                <div className="absolute top-0 left-0 right-0 z-30 pt-3 px-6 flex items-center justify-between text-white pointer-events-none">
-                  <span className="text-[11px] font-semibold tracking-tight">9:41</span>
-
-                  {/* Dynamic Island Pill */}
-                  <div className="w-[102px] h-[26px] rounded-full bg-black border border-white/10 flex items-center justify-between px-2.5 shadow-md">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#121315] border border-white/10" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#0a1828]" />
-                  </div>
-
-                  <div className="flex items-center space-x-1.5 text-white">
-                    <Signal className="w-3 h-3" />
-                    <Wifi className="w-3 h-3" />
-                    <Battery className="w-4 h-4 fill-white" />
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Island in Landscape */}
-              {!isVertical && (
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
-                  <div className="h-[96px] w-[24px] rounded-full bg-black border border-white/10 flex flex-col items-center justify-between py-2 shadow-md">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#121315] border border-white/10" />
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#0a1828]" />
-                  </div>
-                </div>
-              )}
-
-              {/* Tap to Unmute Overlay Banner (Shows if browser muted audio autoplay) */}
-              {needsTapToUnmute && (
-                <button
-                  onClick={handleUnmute}
-                  type="button"
-                  className="absolute top-14 z-30 px-3.5 py-1.5 rounded-full bg-[#C9A86A] text-black font-bold text-xs tracking-wider shadow-lg flex items-center space-x-1.5 animate-bounce"
-                >
-                  <VolumeX className="w-3.5 h-3.5" />
-                  <span>TAP FOR SOUND</span>
-                </button>
-              )}
-
-              {/* Video Element */}
-              <video
-                key={project.id}
-                ref={videoRef}
-                src={project.video}
-                poster={project.thumbnail}
-                autoPlay
-                playsInline
-                preload="auto"
-                onPlay={() => {
-                  setIsPlaying(true);
-                  setIsBuffering(false);
-                }}
-                onPause={() => setIsPlaying(false)}
-                onPlaying={() => {
-                  setIsBuffering(false);
-                  setIsPlaying(true);
-                }}
-                onLoadedData={() => setIsBuffering(false)}
-                onCanPlay={() => setIsBuffering(false)}
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onProgress={updateBuffered}
-                onWaiting={() => {
-                  if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-                  bufferingTimerRef.current = setTimeout(() => {
-                    if (videoRef.current && !videoRef.current.paused) {
-                      setIsBuffering(true);
-                    }
-                  }, 600);
-                }}
-                onSeeked={() => {
-                  if (bufferingTimerRef.current) clearTimeout(bufferingTimerRef.current);
-                  setIsBuffering(false);
-                }}
-                onEnded={() => {
-                  setIsPlaying(false);
-                  setIsBuffering(false);
-                  setShowControls(true);
-                }}
-                className={`w-full h-full ${
-                  isVertical ? "object-cover" : "object-contain"
-                } bg-black`}
-              />
-
-              {/* Quick Click-Feedback Indicator */}
-              {showCenterIcon && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 animate-ping duration-300">
-                  <div className="w-16 h-16 rounded-full bg-black/60 backdrop-blur-md text-[#C9A86A] flex items-center justify-center border border-[#C9A86A]/30">
-                    {showCenterIcon === "play" ? (
-                      <Play className="w-7 h-7 fill-current ml-0.5" />
-                    ) : (
-                      <Pause className="w-7 h-7 fill-current" />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Center Play Overlay when Paused */}
-              {!isPlaying && !isBuffering && (
-                <div className="absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none z-10">
-                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-[#C9A86A] text-black flex items-center justify-center pl-1 shadow-[0_0_35px_rgba(201,168,106,0.5)] transform scale-100 group-hover:scale-105 transition-transform duration-300">
-                    <Play className="w-7 h-7 fill-current" />
-                  </div>
-                </div>
-              )}
-
-              {/* iOS Video Controls Bar */}
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className={`absolute bottom-0 left-0 right-0 p-4 pt-10 bg-gradient-to-t from-black/95 via-black/60 to-transparent z-20 transition-opacity duration-300 ${
-                  showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
-                }`}
-              >
-                {/* Timeline Progress Slider */}
-                <div className="relative mb-2 flex items-center group/timeline">
-                  <div className="absolute left-0 right-0 h-1 bg-white/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-white/35 transition-all duration-150"
-                      style={{ width: `${bufferedPercent}%` }}
-                    />
-                  </div>
-                  <div className="absolute left-0 right-0 h-1 rounded-full overflow-hidden pointer-events-none">
-                    <div
-                      className="h-full bg-[#C9A86A] transition-all duration-75"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    value={progress}
-                    onChange={handleSeekInput}
-                    onMouseUp={handleSeekCommit}
-                    onTouchEnd={handleSeekCommit}
-                    className="relative w-full h-4 opacity-0 cursor-pointer z-10"
-                    aria-label="Seek video progress"
+            {/* Premium Buffering / Loading Spinner */}
+            {(isBuffering || !isVideoReady) && (
+              <div className="absolute inset-0 flex items-center justify-center z-20 bg-black/30">
+                <div className="relative flex items-center justify-center">
+                  {/* Outer pulsing ring */}
+                  <div
+                    className="absolute w-20 h-20 rounded-full border-2 border-[#C9A86A] video-buffer-pulse"
+                  />
+                  {/* Spinning loader */}
+                  <Loader2
+                    className="w-10 h-10 text-[#C9A86A] video-buffer-spin"
                   />
                 </div>
+              </div>
+            )}
 
-                {/* Control Actions Row */}
-                <div className="flex items-center justify-between text-white text-xs">
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={handlePlayPause}
-                      className="text-white hover:text-[#C9A86A] transition-colors p-1"
-                      aria-label={isPlaying ? "Pause" : "Play"}
-                    >
-                      {isPlaying ? (
-                        <Pause className="w-4 h-4 fill-current" />
-                      ) : (
-                        <Play className="w-4 h-4 fill-current" />
-                      )}
-                    </button>
+            {/* Tap to Unmute Banner */}
+            {needsTapToUnmute && (
+              <button
+                onClick={handleUnmute}
+                type="button"
+                className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-full bg-[#C9A86A] text-black font-bold text-xs tracking-wider shadow-lg flex items-center space-x-2 hover:bg-[#E0C487] transition-colors"
+              >
+                <VolumeX className="w-3.5 h-3.5" />
+                <span>TAP FOR SOUND</span>
+              </button>
+            )}
 
-                    <span className="text-[11px] font-mono text-white/80">
-                      {currentTime} / {duration}
-                    </span>
-                  </div>
+            {/* Center Play/Pause Quick Feedback */}
+            {showCenterIcon && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                <div
+                  className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm text-[#C9A86A] flex items-center justify-center border border-[#C9A86A]/30 video-center-icon-pop"
+                >
+                  {showCenterIcon === "play" ? (
+                    <Play className="w-7 h-7 fill-current ml-0.5" />
+                  ) : (
+                    <Pause className="w-7 h-7 fill-current" />
+                  )}
+                </div>
+              </div>
+            )}
 
-                  <div className="flex items-center space-x-3">
+            {/* Center Play Overlay when Paused */}
+            {!isPlaying && !isBuffering && isVideoReady && (
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none z-10 transition-opacity duration-200">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#C9A86A] text-black flex items-center justify-center pl-1 shadow-[0_0_40px_rgba(201,168,106,0.4)] transform group-hover:scale-105 transition-transform duration-300">
+                  <Play className="w-7 h-7 sm:w-8 sm:h-8 fill-current" />
+                </div>
+              </div>
+            )}
+
+            {/* Video Controls Bar */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`absolute bottom-0 left-0 right-0 p-4 pt-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-20 transition-opacity duration-300 ${
+                showControls || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              {/* Timeline Progress */}
+              <div className="relative mb-2.5 flex items-center group/timeline">
+                {/* Buffer bar */}
+                <div className="absolute left-0 right-0 h-1 bg-white/15 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white/25 rounded-full transition-all duration-200"
+                    style={{ width: `${bufferedPercent}%` }}
+                  />
+                </div>
+                {/* Progress bar */}
+                <div className="absolute left-0 right-0 h-1 rounded-full overflow-hidden pointer-events-none">
+                  <div
+                    className="h-full bg-[#C9A86A] rounded-full"
+                    style={{
+                      width: `${progress}%`,
+                      transition: isScrubbing ? "none" : "width 0.15s linear",
+                    }}
+                  />
+                </div>
+                {/* Thumb dot */}
+                <div
+                  className="absolute h-3 w-3 rounded-full bg-[#C9A86A] shadow-md pointer-events-none z-10 opacity-0 group-hover/timeline:opacity-100 transition-opacity duration-200"
+                  style={{
+                    left: `calc(${progress}% - 6px)`,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  }}
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={progress}
+                  onChange={handleSeekInput}
+                  onMouseDown={() => setIsScrubbing(true)}
+                  onMouseUp={handleSeekCommit}
+                  onTouchEnd={handleSeekCommit}
+                  className="relative w-full h-5 opacity-0 cursor-pointer z-10"
+                  aria-label="Seek video progress"
+                />
+              </div>
+
+              {/* Control Actions */}
+              <div className="flex items-center justify-between text-white text-xs">
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handlePlayPause}
+                    className="text-white hover:text-[#C9A86A] transition-colors p-1 cursor-pointer"
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                  >
+                    {isPlaying ? (
+                      <Pause className="w-4.5 h-4.5 fill-current" />
+                    ) : (
+                      <Play className="w-4.5 h-4.5 fill-current" />
+                    )}
+                  </button>
+
+                  <span className="text-[11px] font-mono text-white/80 tabular-nums">
+                    {currentTime} / {duration}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  {/* Volume Slider Group */}
+                  <div className="hidden sm:flex items-center space-x-1.5 group/vol">
                     <button
                       onClick={toggleMute}
-                      className="text-white hover:text-[#C9A86A] transition-colors p-1"
+                      className="text-white hover:text-[#C9A86A] transition-colors p-1 cursor-pointer"
                       aria-label={isMuted ? "Unmute" : "Mute"}
                     >
                       {isMuted || volume === 0 ? (
@@ -571,38 +555,63 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
                         <Volume2 className="w-4 h-4" />
                       )}
                     </button>
-
-                    <button
-                      onClick={toggleFullscreen}
-                      className="text-white hover:text-[#C9A86A] transition-colors p-1"
-                      aria-label="Toggle Fullscreen"
-                    >
-                      {isFullscreen ? (
-                        <Minimize2 className="w-4 h-4" />
-                      ) : (
-                        <Maximize2 className="w-4 h-4" />
-                      )}
-                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="w-16 h-1 appearance-none bg-white/20 rounded-full cursor-pointer accent-[#C9A86A] opacity-0 group-hover/vol:opacity-100 transition-opacity duration-200"
+                      aria-label="Volume"
+                      style={{
+                        background: `linear-gradient(to right, #C9A86A ${
+                          (isMuted ? 0 : volume) * 100
+                        }%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%)`,
+                      }}
+                    />
                   </div>
-                </div>
 
-                {/* iOS Home Indicator Bar */}
-                <div className="mt-3 w-28 h-1 rounded-full bg-white/40 mx-auto" />
+                  {/* Mobile Mute Toggle */}
+                  <button
+                    onClick={toggleMute}
+                    className="sm:hidden text-white hover:text-[#C9A86A] transition-colors p-1 cursor-pointer"
+                    aria-label={isMuted ? "Unmute" : "Mute"}
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={toggleFullscreen}
+                    className="text-white hover:text-[#C9A86A] transition-colors p-1 cursor-pointer"
+                    aria-label="Toggle Fullscreen"
+                  >
+                    {isFullscreen ? (
+                      <Minimize2 className="w-4 h-4" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* ====================================================================
-            PROJECT INFORMATION CARD (Adaptive Theme in Light vs Dark Mode)
+            PROJECT INFORMATION CARD
            ==================================================================== */}
         <div
           className={`flex-1 w-full ${
             isLight
               ? "bg-white/95 border-black/[0.08] text-[#151412] shadow-xl"
               : "bg-[#141413]/95 border-white/10 text-[#F5F2EA] shadow-2xl"
-          } border rounded-2xl p-6 sm:p-7 backdrop-blur-xl text-left space-y-5 ${
-            isVertical ? "max-w-md lg:max-w-lg" : "max-w-4xl"
+          } border rounded-xl p-6 sm:p-7 backdrop-blur-xl text-left space-y-5 ${
+            isVertical ? "max-w-md lg:max-w-lg" : "max-w-[960px]"
           } transition-colors duration-300`}
         >
           {/* Header & Category */}
@@ -640,7 +649,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
             </p>
           </div>
 
-          {/* Duration & Roles */}
+          {/* Duration & Format */}
           <div
             className={`grid grid-cols-2 gap-4 pt-4 border-t ${
               isLight ? "border-black/[0.08]" : "border-white/10"
@@ -711,6 +720,8 @@ export const VideoModal: React.FC<VideoModalProps> = ({ project, onClose }) => {
           </div>
         </div>
       </div>
+
+
     </div>
   );
 };

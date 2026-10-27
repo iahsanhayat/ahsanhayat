@@ -445,4 +445,49 @@ html.light ::-webkit-scrollbar-thumb:hover {
   background: #9C7428;
 }
 
+/* ============================================================
+   VIDEO PLAYER ANIMATIONS
+   ============================================================ */
+@keyframes bufferSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bufferPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes centerIconPop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.video-buffer-spin {
+  animation: bufferSpin 0.8s linear infinite;
+}
+
+.video-buffer-pulse {
+  animation: bufferPulse 1.8s ease-in-out infinite;
+}
+
+.video-center-icon-pop {
+  animation: centerIconPop 0.5s ease-out forwards;
+}
 
